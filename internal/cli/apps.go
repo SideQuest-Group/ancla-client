@@ -21,14 +21,18 @@ func init() {
 }
 
 var appsCmd = &cobra.Command{
-	Use:   "apps",
-	Short: "Manage applications",
+	Use:     "apps",
+	Aliases: []string{"app", "a"},
+	Short:   "Manage applications",
+	Example: "  ancla apps list my-org/my-project\n  ancla apps get my-org/my-project/my-app\n  ancla apps deploy <app-id>",
+	GroupID: "resources",
 }
 
 var appsListCmd = &cobra.Command{
-	Use:   "list <org>/<project>",
-	Short: "List applications in a project",
-	Args:  cobra.ExactArgs(1),
+	Use:     "list <org>/<project>",
+	Short:   "List applications in a project",
+	Example: "  ancla apps list my-org/my-project",
+	Args:    cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		req, _ := http.NewRequest("GET", apiURL("/applications/"+args[0]), nil)
 		body, err := doRequest(req)
@@ -45,8 +49,12 @@ var appsListCmd = &cobra.Command{
 			return fmt.Errorf("parsing response: %w", err)
 		}
 
+		if isJSON() {
+			return printJSON(apps)
+		}
+
 		w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-		fmt.Fprintln(w, "SLUG\tNAME\tPLATFORM")
+		fmt.Fprintf(w, "%s\t%s\t%s\n", colorHeader("SLUG"), colorHeader("NAME"), colorHeader("PLATFORM"))
 		for _, a := range apps {
 			fmt.Fprintf(w, "%s\t%s\t%s\n", a.Slug, a.Name, a.Platform)
 		}
@@ -55,9 +63,10 @@ var appsListCmd = &cobra.Command{
 }
 
 var appsGetCmd = &cobra.Command{
-	Use:   "get <org>/<project>/<app>",
-	Short: "Get application details",
-	Args:  cobra.ExactArgs(1),
+	Use:     "get <org>/<project>/<app>",
+	Short:   "Get application details",
+	Example: "  ancla apps get my-org/my-project/my-app",
+	Args:    cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		req, _ := http.NewRequest("GET", apiURL("/applications/"+args[0]), nil)
 		body, err := doRequest(req)
@@ -75,6 +84,10 @@ var appsGetCmd = &cobra.Command{
 		}
 		if err := json.Unmarshal(body, &app); err != nil {
 			return fmt.Errorf("parsing response: %w", err)
+		}
+
+		if isJSON() {
+			return printJSON(app)
 		}
 
 		fmt.Printf("Application: %s (%s)\n", app.Name, app.Slug)
@@ -96,9 +109,10 @@ var appsGetCmd = &cobra.Command{
 }
 
 var appsDeployCmd = &cobra.Command{
-	Use:   "deploy <app-id>",
-	Short: "Trigger a full deploy for an application",
-	Args:  cobra.ExactArgs(1),
+	Use:     "deploy <app-id>",
+	Short:   "Trigger a full deploy for an application",
+	Example: "  ancla apps deploy abc12345",
+	Args:    cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		req, _ := http.NewRequest("POST", apiURL("/applications/"+args[0]+"/deploy"), nil)
 		body, err := doRequest(req)
@@ -116,9 +130,10 @@ var appsDeployCmd = &cobra.Command{
 }
 
 var appsScaleCmd = &cobra.Command{
-	Use:   "scale <app-id> <process>=<count> ...",
-	Short: "Scale application processes",
-	Args:  cobra.MinimumNArgs(2),
+	Use:     "scale <app-id> <process>=<count> ...",
+	Short:   "Scale application processes",
+	Example: "  ancla apps scale abc12345 web=2 worker=1",
+	Args:    cobra.MinimumNArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		counts := make(map[string]int)
 		for _, arg := range args[1:] {
@@ -143,9 +158,10 @@ var appsScaleCmd = &cobra.Command{
 }
 
 var appsStatusCmd = &cobra.Command{
-	Use:   "status <app-id>",
-	Short: "Show pipeline status for an application",
-	Args:  cobra.ExactArgs(1),
+	Use:     "status <app-id>",
+	Short:   "Show pipeline status for an application",
+	Example: "  ancla apps status abc12345",
+	Args:    cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		req, _ := http.NewRequest("GET", apiURL("/applications/"+args[0]+"/pipeline-status"), nil)
 		body, err := doRequest(req)
@@ -160,20 +176,24 @@ var appsStatusCmd = &cobra.Command{
 		}
 		json.Unmarshal(body, &status)
 
+		if isJSON() {
+			return printJSON(status)
+		}
+
 		w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-		fmt.Fprintln(w, "STAGE\tSTATUS")
+		fmt.Fprintf(w, "%s\t%s\n", colorHeader("STAGE"), colorHeader("STATUS"))
 		if status.Build != nil {
-			fmt.Fprintf(w, "Build\t%s\n", status.Build.Status)
+			fmt.Fprintf(w, "Build\t%s\n", colorStatus(status.Build.Status))
 		} else {
 			fmt.Fprintf(w, "Build\t-\n")
 		}
 		if status.Release != nil {
-			fmt.Fprintf(w, "Release\t%s\n", status.Release.Status)
+			fmt.Fprintf(w, "Release\t%s\n", colorStatus(status.Release.Status))
 		} else {
 			fmt.Fprintf(w, "Release\t-\n")
 		}
 		if status.Deploy != nil {
-			fmt.Fprintf(w, "Deploy\t%s\n", status.Deploy.Status)
+			fmt.Fprintf(w, "Deploy\t%s\n", colorStatus(status.Deploy.Status))
 		} else {
 			fmt.Fprintf(w, "Deploy\t-\n")
 		}

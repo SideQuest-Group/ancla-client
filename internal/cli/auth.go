@@ -25,9 +25,11 @@ func init() {
 }
 
 var loginCmd = &cobra.Command{
-	Use:   "login",
-	Short: "Authenticate with the Ancla server",
-	Long:  "Log in to the Ancla server via your browser and store the API key.",
+	Use:     "login",
+	Short:   "Authenticate with the Ancla server",
+	Long:    "Log in to the Ancla server via your browser and store the API key.",
+	Example: "  ancla login\n  ancla login --manual",
+	GroupID: "auth",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		manual, _ := cmd.Flags().GetBool("manual")
 		if manual {
@@ -188,8 +190,10 @@ func saveAndVerifyKey(apiKey string) error {
 }
 
 var whoamiCmd = &cobra.Command{
-	Use:   "whoami",
-	Short: "Show the current authenticated session",
+	Use:     "whoami",
+	Short:   "Show the current authenticated session",
+	Example: "  ancla whoami",
+	GroupID: "auth",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		req, _ := http.NewRequest("GET", apiURL("/auth/session"), nil)
 		body, err := doRequest(req)

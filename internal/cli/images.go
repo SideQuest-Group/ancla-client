@@ -18,14 +18,18 @@ func init() {
 }
 
 var imagesCmd = &cobra.Command{
-	Use:   "images",
-	Short: "Manage images",
+	Use:     "images",
+	Aliases: []string{"image", "img"},
+	Short:   "Manage images",
+	Example: "  ancla images list <app-id>\n  ancla images build <app-id>",
+	GroupID: "resources",
 }
 
 var imagesListCmd = &cobra.Command{
-	Use:   "list <app-id>",
-	Short: "List images for an application",
-	Args:  cobra.ExactArgs(1),
+	Use:     "list <app-id>",
+	Short:   "List images for an application",
+	Example: "  ancla images list abc12345",
+	Args:    cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		req, _ := http.NewRequest("GET", apiURL("/images/"+args[0]), nil)
 		body, err := doRequest(req)
@@ -46,8 +50,12 @@ var imagesListCmd = &cobra.Command{
 			return fmt.Errorf("parsing response: %w", err)
 		}
 
+		if isJSON() {
+			return printJSON(result)
+		}
+
 		w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-		fmt.Fprintln(w, "VERSION\tID\tSTATUS\tCREATED")
+		fmt.Fprintf(w, "%s\t%s\t%s\t%s\n", colorHeader("VERSION"), colorHeader("ID"), colorHeader("STATUS"), colorHeader("CREATED"))
 		for _, img := range result.Items {
 			status := "building"
 			if img.Error {
@@ -59,16 +67,17 @@ var imagesListCmd = &cobra.Command{
 			if len(id) > 8 {
 				id = id[:8]
 			}
-			fmt.Fprintf(w, "v%d\t%s\t%s\t%s\n", img.Version, id, status, img.Created)
+			fmt.Fprintf(w, "v%d\t%s\t%s\t%s\n", img.Version, id, colorStatus(status), img.Created)
 		}
 		return w.Flush()
 	},
 }
 
 var imagesBuildCmd = &cobra.Command{
-	Use:   "build <app-id>",
-	Short: "Trigger an image build",
-	Args:  cobra.ExactArgs(1),
+	Use:     "build <app-id>",
+	Short:   "Trigger an image build",
+	Example: "  ancla images build abc12345",
+	Args:    cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		req, _ := http.NewRequest("POST", apiURL("/images/"+args[0]+"/build"), nil)
 		body, err := doRequest(req)
@@ -87,9 +96,10 @@ var imagesBuildCmd = &cobra.Command{
 }
 
 var imagesLogCmd = &cobra.Command{
-	Use:   "log <image-id>",
-	Short: "Show build log for an image",
-	Args:  cobra.ExactArgs(1),
+	Use:     "log <image-id>",
+	Short:   "Show build log for an image",
+	Example: "  ancla images log <image-id>",
+	Args:    cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		req, _ := http.NewRequest("GET", apiURL("/images/"+args[0]+"/log"), nil)
 		body, err := doRequest(req)

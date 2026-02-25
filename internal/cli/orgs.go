@@ -17,13 +17,17 @@ func init() {
 }
 
 var orgsCmd = &cobra.Command{
-	Use:   "orgs",
-	Short: "Manage organizations",
+	Use:     "orgs",
+	Aliases: []string{"org", "o"},
+	Short:   "Manage organizations",
+	Example: "  ancla orgs list\n  ancla orgs get my-org",
+	GroupID: "resources",
 }
 
 var orgsListCmd = &cobra.Command{
-	Use:   "list",
-	Short: "List organizations",
+	Use:     "list",
+	Short:   "List organizations",
+	Example: "  ancla orgs list",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		req, _ := http.NewRequest("GET", apiURL("/organizations/"), nil)
 		body, err := doRequest(req)
@@ -42,6 +46,10 @@ var orgsListCmd = &cobra.Command{
 			return fmt.Errorf("parsing response: %w", err)
 		}
 
+		if isJSON() {
+			return printJSON(orgs)
+		}
+
 		w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
 		fmt.Fprintln(w, "SLUG\tNAME\tMEMBERS\tPROJECTS")
 		for _, o := range orgs {
@@ -52,9 +60,10 @@ var orgsListCmd = &cobra.Command{
 }
 
 var orgsGetCmd = &cobra.Command{
-	Use:   "get <slug>",
-	Short: "Get organization details",
-	Args:  cobra.ExactArgs(1),
+	Use:     "get <slug>",
+	Short:   "Get organization details",
+	Example: "  ancla orgs get my-org",
+	Args:    cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		req, _ := http.NewRequest("GET", apiURL("/organizations/"+args[0]), nil)
 		body, err := doRequest(req)
@@ -75,6 +84,10 @@ var orgsGetCmd = &cobra.Command{
 		}
 		if err := json.Unmarshal(body, &org); err != nil {
 			return fmt.Errorf("parsing response: %w", err)
+		}
+
+		if isJSON() {
+			return printJSON(org)
 		}
 
 		fmt.Printf("Organization: %s (%s)\n", org.Name, org.Slug)

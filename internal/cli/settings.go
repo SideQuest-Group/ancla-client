@@ -20,13 +20,17 @@ func init() {
 }
 
 var settingsCmd = &cobra.Command{
-	Use:   "settings",
-	Short: "Manage CLI settings (~/.ancla/config.yaml)",
+	Use:     "settings",
+	Aliases: []string{"setting"},
+	Short:   "Manage CLI settings (~/.ancla/config.yaml)",
+	Example: "  ancla settings show\n  ancla settings set server https://ancla.dev",
+	GroupID: "config",
 }
 
 var settingsShowCmd = &cobra.Command{
-	Use:   "show",
-	Short: "Show current CLI settings",
+	Use:     "show",
+	Short:   "Show current CLI settings",
+	Example: "  ancla settings show",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if cfg.APIKey != "" {
 			masked := cfg.APIKey
@@ -44,9 +48,10 @@ var settingsShowCmd = &cobra.Command{
 }
 
 var settingsSetCmd = &cobra.Command{
-	Use:   "set <key> <value>",
-	Short: "Set a CLI setting (api_key)",
-	Args:  cobra.ExactArgs(2),
+	Use:     "set <key> <value>",
+	Short:   "Set a CLI setting (api_key)",
+	Example: "  ancla settings set server https://ancla.dev\n  ancla settings set api_key mykey123",
+	Args:    cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		key, value := args[0], args[1]
 		switch key {
@@ -66,8 +71,9 @@ var settingsSetCmd = &cobra.Command{
 }
 
 var settingsEditCmd = &cobra.Command{
-	Use:   "edit",
-	Short: "Open config in $EDITOR",
+	Use:     "edit",
+	Short:   "Open config in $EDITOR",
+	Example: "  ancla settings edit",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		path := config.FilePath()
 		editor := os.Getenv("EDITOR")
@@ -83,8 +89,9 @@ var settingsEditCmd = &cobra.Command{
 }
 
 var settingsPathCmd = &cobra.Command{
-	Use:   "path",
-	Short: "Show config file locations",
+	Use:     "path",
+	Short:   "Show config file locations",
+	Example: "  ancla settings path",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		globalPath, localPath := config.Paths()
 		fmt.Printf("global: %s\n", globalPath)

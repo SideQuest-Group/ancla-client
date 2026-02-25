@@ -14,8 +14,9 @@ import (
 )
 
 var (
-	cfgFile string
-	cfg     *config.Config
+	cfgFile      string
+	outputFormat string
+	cfg          *config.Config
 )
 
 var rootCmd = &cobra.Command{
@@ -56,6 +57,28 @@ func init() {
 	rootCmd.PersistentFlags().String("server", "", "Ancla server URL (dev only)")
 	rootCmd.PersistentFlags().String("api-key", "", "API key for authentication")
 	_ = rootCmd.PersistentFlags().MarkHidden("server")
+	rootCmd.PersistentFlags().StringVarP(&outputFormat, "output", "o", "table", "Output format: table or json")
+
+	rootCmd.AddGroup(
+		&cobra.Group{ID: "auth", Title: "Auth & Identity:"},
+		&cobra.Group{ID: "resources", Title: "Resources:"},
+		&cobra.Group{ID: "config", Title: "Configuration:"},
+	)
+}
+
+// isJSON returns true when the user requested JSON output.
+func isJSON() bool {
+	return outputFormat == "json"
+}
+
+// printJSON marshals v as indented JSON and writes it to stdout.
+func printJSON(v any) error {
+	data, err := json.MarshalIndent(v, "", "  ")
+	if err != nil {
+		return fmt.Errorf("encoding JSON: %w", err)
+	}
+	fmt.Println(string(data))
+	return nil
 }
 
 // apiClient returns an *http.Client with the API key header set.

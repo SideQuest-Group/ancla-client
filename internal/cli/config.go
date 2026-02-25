@@ -22,14 +22,18 @@ func init() {
 }
 
 var configCmd = &cobra.Command{
-	Use:   "config",
-	Short: "Manage application configuration",
+	Use:     "config",
+	Aliases: []string{"cfg", "env"},
+	Short:   "Manage application configuration",
+	Example: "  ancla config list <app-id>\n  ancla config set <app-id> KEY=value",
+	GroupID: "config",
 }
 
 var configListCmd = &cobra.Command{
-	Use:   "list <app-id>",
-	Short: "List configuration variables",
-	Args:  cobra.ExactArgs(1),
+	Use:     "list <app-id>",
+	Short:   "List configuration variables",
+	Example: "  ancla config list abc12345",
+	Args:    cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		req, _ := http.NewRequest("GET", apiURL("/configurations/"+args[0]), nil)
 		body, err := doRequest(req)
@@ -48,6 +52,10 @@ var configListCmd = &cobra.Command{
 			return fmt.Errorf("parsing response: %w", err)
 		}
 
+		if isJSON() {
+			return printJSON(configs)
+		}
+
 		w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
 		fmt.Fprintln(w, "NAME\tVALUE\tSECRET\tBUILDTIME")
 		for _, c := range configs {
@@ -58,9 +66,10 @@ var configListCmd = &cobra.Command{
 }
 
 var configSetCmd = &cobra.Command{
-	Use:   "set <app-id> KEY=value",
-	Short: "Set a configuration variable",
-	Args:  cobra.ExactArgs(2),
+	Use:     "set <app-id> KEY=value",
+	Short:   "Set a configuration variable",
+	Example: "  ancla config set abc12345 DATABASE_URL=postgres://localhost/mydb",
+	Args:    cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		parts := strings.SplitN(args[1], "=", 2)
 		if len(parts) != 2 {
@@ -82,9 +91,10 @@ var configSetCmd = &cobra.Command{
 }
 
 var configDeleteCmd = &cobra.Command{
-	Use:   "delete <app-id> <config-id>",
-	Short: "Delete a configuration variable",
-	Args:  cobra.ExactArgs(2),
+	Use:     "delete <app-id> <config-id>",
+	Short:   "Delete a configuration variable",
+	Example: "  ancla config delete abc12345 <config-id>",
+	Args:    cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		req, _ := http.NewRequest("DELETE", apiURL("/configurations/"+args[0]+"/"+args[1]), nil)
 		if _, err := doRequest(req); err != nil {
@@ -96,9 +106,10 @@ var configDeleteCmd = &cobra.Command{
 }
 
 var configImportCmd = &cobra.Command{
-	Use:   "import <app-id>",
-	Short: "Bulk import configuration from a .env file",
-	Args:  cobra.ExactArgs(1),
+	Use:     "import <app-id>",
+	Short:   "Bulk import configuration from a .env file",
+	Example: "  ancla config import abc12345 --file .env",
+	Args:    cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		filePath, _ := cmd.Flags().GetString("file")
 		if filePath == "" {

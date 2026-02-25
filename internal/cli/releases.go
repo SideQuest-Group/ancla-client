@@ -18,14 +18,18 @@ func init() {
 }
 
 var releasesCmd = &cobra.Command{
-	Use:   "releases",
-	Short: "Manage releases",
+	Use:     "releases",
+	Aliases: []string{"release", "rel"},
+	Short:   "Manage releases",
+	Example: "  ancla releases list <app-id>\n  ancla releases create <app-id>",
+	GroupID: "resources",
 }
 
 var releasesListCmd = &cobra.Command{
-	Use:   "list <app-id>",
-	Short: "List releases for an application",
-	Args:  cobra.ExactArgs(1),
+	Use:     "list <app-id>",
+	Short:   "List releases for an application",
+	Example: "  ancla releases list abc12345",
+	Args:    cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		req, _ := http.NewRequest("GET", apiURL("/releases/"+args[0]), nil)
 		body, err := doRequest(req)
@@ -47,8 +51,12 @@ var releasesListCmd = &cobra.Command{
 			return fmt.Errorf("parsing response: %w", err)
 		}
 
+		if isJSON() {
+			return printJSON(result)
+		}
+
 		w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-		fmt.Fprintln(w, "VERSION\tID\tPLATFORM\tSTATUS\tCREATED")
+		fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\n", colorHeader("VERSION"), colorHeader("ID"), colorHeader("PLATFORM"), colorHeader("STATUS"), colorHeader("CREATED"))
 		for _, r := range result.Items {
 			status := "building"
 			if r.Error {
@@ -60,16 +68,17 @@ var releasesListCmd = &cobra.Command{
 			if len(id) > 8 {
 				id = id[:8]
 			}
-			fmt.Fprintf(w, "v%d\t%s\t%s\t%s\t%s\n", r.Version, id, r.Platform, status, r.Created)
+			fmt.Fprintf(w, "v%d\t%s\t%s\t%s\t%s\n", r.Version, id, r.Platform, colorStatus(status), r.Created)
 		}
 		return w.Flush()
 	},
 }
 
 var releasesCreateCmd = &cobra.Command{
-	Use:   "create <app-id>",
-	Short: "Create a new release",
-	Args:  cobra.ExactArgs(1),
+	Use:     "create <app-id>",
+	Short:   "Create a new release",
+	Example: "  ancla releases create abc12345",
+	Args:    cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		req, _ := http.NewRequest("POST", apiURL("/releases/"+args[0]+"/create"), nil)
 		body, err := doRequest(req)
@@ -88,9 +97,10 @@ var releasesCreateCmd = &cobra.Command{
 }
 
 var releasesDeployCmd = &cobra.Command{
-	Use:   "deploy <release-id>",
-	Short: "Deploy a release",
-	Args:  cobra.ExactArgs(1),
+	Use:     "deploy <release-id>",
+	Short:   "Deploy a release",
+	Example: "  ancla releases deploy <release-id>",
+	Args:    cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		req, _ := http.NewRequest("POST", apiURL("/releases/"+args[0]+"/deploy"), nil)
 		body, err := doRequest(req)

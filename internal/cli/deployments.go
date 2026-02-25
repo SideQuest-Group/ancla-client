@@ -15,14 +15,18 @@ func init() {
 }
 
 var deploymentsCmd = &cobra.Command{
-	Use:   "deployments",
-	Short: "Manage deployments",
+	Use:     "deployments",
+	Aliases: []string{"deployment", "dep"},
+	Short:   "Manage deployments",
+	Example: "  ancla deployments get <deployment-id>\n  ancla deployments log <deployment-id>",
+	GroupID: "resources",
 }
 
 var deploymentsGetCmd = &cobra.Command{
-	Use:   "get <deployment-id>",
-	Short: "Get deployment details",
-	Args:  cobra.ExactArgs(1),
+	Use:     "get <deployment-id>",
+	Short:   "Get deployment details",
+	Example: "  ancla deployments get abc12345",
+	Args:    cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		req, _ := http.NewRequest("GET", apiURL("/deployments/"+args[0]+"/detail"), nil)
 		body, err := doRequest(req)
@@ -43,6 +47,10 @@ var deploymentsGetCmd = &cobra.Command{
 			return fmt.Errorf("parsing response: %w", err)
 		}
 
+		if isJSON() {
+			return printJSON(dpl)
+		}
+
 		status := "in progress"
 		if dpl.Error {
 			status = "error"
@@ -51,7 +59,7 @@ var deploymentsGetCmd = &cobra.Command{
 		}
 
 		fmt.Printf("Deployment: %s\n", dpl.ID)
-		fmt.Printf("Status: %s\n", status)
+		fmt.Printf("Status: %s\n", colorStatus(status))
 		if dpl.ErrorDtl != "" {
 			fmt.Printf("Error: %s\n", dpl.ErrorDtl)
 		}
@@ -66,9 +74,10 @@ var deploymentsGetCmd = &cobra.Command{
 }
 
 var deploymentsLogCmd = &cobra.Command{
-	Use:   "log <deployment-id>",
-	Short: "Show deployment log",
-	Args:  cobra.ExactArgs(1),
+	Use:     "log <deployment-id>",
+	Short:   "Show deployment log",
+	Example: "  ancla deployments log abc12345",
+	Args:    cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		req, _ := http.NewRequest("GET", apiURL("/deployments/"+args[0]+"/log"), nil)
 		body, err := doRequest(req)
