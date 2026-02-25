@@ -19,6 +19,11 @@ var imagesCmd = &cobra.Command{
 	Use:     "images",
 	Aliases: []string{"image", "img"},
 	Short:   "Manage images",
+	Long: `Manage container images for an application.
+
+Images are built from your application source code. Each build produces a new
+versioned image that can be used to create a release. Use sub-commands to list
+images, trigger a new build, or view build logs.`,
 	Example: "  ancla images list <app-id>\n  ancla images build <app-id>",
 	GroupID: "resources",
 }

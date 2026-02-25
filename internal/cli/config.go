@@ -24,6 +24,12 @@ var configCmd = &cobra.Command{
 	Use:     "config",
 	Aliases: []string{"cfg", "env"},
 	Short:   "Manage application configuration",
+	Long: `Manage configuration variables for an application.
+
+Configuration variables are key-value pairs injected into your application at
+runtime. Variables can be marked as secrets (values hidden by default) or as
+build-time variables available during image builds. Use sub-commands to list,
+set, delete, or bulk-import configuration from .env files.`,
 	Example: "  ancla config list <app-id>\n  ancla config set <app-id> KEY=value",
 	GroupID: "config",
 }

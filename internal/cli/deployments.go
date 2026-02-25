@@ -18,6 +18,11 @@ var deploymentsCmd = &cobra.Command{
 	Use:     "deployments",
 	Aliases: []string{"deployment", "dep"},
 	Short:   "Manage deployments",
+	Long: `Manage deployments for your applications.
+
+Deployments represent the rollout of a release to your infrastructure. Each
+deployment tracks its progress and can be inspected for status, errors, and
+logs. Use sub-commands to view deployment details or stream deployment logs.`,
 	Example: "  ancla deployments get <deployment-id>\n  ancla deployments log <deployment-id>",
 	GroupID: "resources",
 }

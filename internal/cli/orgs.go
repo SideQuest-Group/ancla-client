@@ -18,6 +18,11 @@ var orgsCmd = &cobra.Command{
 	Use:     "orgs",
 	Aliases: []string{"org", "o"},
 	Short:   "Manage organizations",
+	Long: `Manage organizations on the Ancla platform.
+
+Organizations are the top-level grouping for projects and team members.
+Use sub-commands to list your organizations or inspect a specific one,
+including its members, projects, and application counts.`,
 	Example: "  ancla orgs list\n  ancla orgs get my-org",
 	GroupID: "resources",
 }

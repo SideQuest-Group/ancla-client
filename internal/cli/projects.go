@@ -18,6 +18,11 @@ var projectsCmd = &cobra.Command{
 	Use:     "projects",
 	Aliases: []string{"proj", "p"},
 	Short:   "Manage projects",
+	Long: `Manage projects within an organization.
+
+Projects group related applications together under an organization. Each project
+can contain multiple applications that share the same org-level permissions.
+Use sub-commands to list all projects or inspect a specific one.`,
 	Example: "  ancla projects list\n  ancla projects get my-org/my-project",
 	GroupID: "resources",
 }

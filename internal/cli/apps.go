@@ -22,6 +22,11 @@ var appsCmd = &cobra.Command{
 	Use:     "apps",
 	Aliases: []string{"app", "a"},
 	Short:   "Manage applications",
+	Long: `Manage applications within a project.
+
+Applications are the deployable units in Ancla. Each application belongs to an
+org/project and has its own images, releases, deployments, and configuration.
+Use sub-commands to list, inspect, deploy, and scale your applications.`,
 	Example: "  ancla apps list my-org/my-project\n  ancla apps get my-org/my-project/my-app\n  ancla apps deploy <app-id>",
 	GroupID: "resources",
 }

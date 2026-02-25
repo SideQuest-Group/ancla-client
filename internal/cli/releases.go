@@ -19,6 +19,11 @@ var releasesCmd = &cobra.Command{
 	Use:     "releases",
 	Aliases: []string{"release", "rel"},
 	Short:   "Manage releases",
+	Long: `Manage releases for an application.
+
+A release combines a built image with configuration to create a deployable
+artifact. Releases are versioned and can be deployed to your infrastructure.
+Use sub-commands to list releases, create new ones, or deploy them.`,
 	Example: "  ancla releases list <app-id>\n  ancla releases create <app-id>",
 	GroupID: "resources",
 }
