@@ -121,16 +121,12 @@ func TestAppsScaleCmd_InvalidScaleFormat(t *testing.T) {
 
 	cfg = &config.Config{Server: ts.URL}
 
-	// All these formats produce an error from RunE because fmt.Sscanf
-	// does not support the %[^=] verb for strings. This is a known
-	// limitation in the current scale command parsing.
 	badFormats := []struct {
 		name string
 		args []string
 	}{
 		{"missing equals", []string{"app-id", "web2"}},
 		{"non-numeric count", []string{"app-id", "web=abc"}},
-		{"valid-looking format", []string{"app-id", "web=2"}},
 	}
 
 	for _, tt := range badFormats {

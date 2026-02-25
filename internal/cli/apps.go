@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -147,12 +149,15 @@ var appsScaleCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		counts := make(map[string]int)
 		for _, arg := range args[1:] {
-			var proc string
-			var count int
-			if _, err := fmt.Sscanf(arg, "%[^=]=%d", &proc, &count); err != nil {
+			parts := strings.SplitN(arg, "=", 2)
+			if len(parts) != 2 || parts[0] == "" {
 				return fmt.Errorf("invalid scale argument %q (expected process=count)", arg)
 			}
-			counts[proc] = count
+			count, err := strconv.Atoi(parts[1])
+			if err != nil {
+				return fmt.Errorf("invalid scale argument %q: count must be an integer", arg)
+			}
+			counts[parts[0]] = count
 		}
 
 		// Warn when scaling any process to 0 — this effectively stops it.
