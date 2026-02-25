@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/spf13/cobra"
 )
@@ -12,6 +13,8 @@ func init() {
 	rootCmd.AddCommand(deploymentsCmd)
 	deploymentsCmd.AddCommand(deploymentsGetCmd)
 	deploymentsCmd.AddCommand(deploymentsLogCmd)
+	deploymentsGetCmd.Flags().BoolP("follow", "f", false, "Follow deployment progress until complete")
+	deploymentsLogCmd.Flags().BoolP("follow", "f", false, "Poll for log updates until deployment completes")
 }
 
 var deploymentsCmd = &cobra.Command{
@@ -74,6 +77,11 @@ var deploymentsGetCmd = &cobra.Command{
 		if dpl.Updated != "" {
 			fmt.Printf("Updated: %s\n", dpl.Updated)
 		}
+
+		follow, _ := cmd.Flags().GetBool("follow")
+		if follow && !dpl.Complete && !dpl.Error {
+			return followDeployment(args[0])
+		}
 		return nil
 	},
 }
@@ -102,6 +110,83 @@ var deploymentsLogCmd = &cobra.Command{
 		} else {
 			fmt.Println("(no log output yet)")
 		}
+
+		follow, _ := cmd.Flags().GetBool("follow")
+		if follow {
+			return followDeploymentLog(args[0])
+		}
 		return nil
 	},
+}
+
+// followDeployment polls deployment status until complete or error.
+func followDeployment(deploymentID string) error {
+	stop := spin("Deploying...")
+	defer stop()
+
+	for {
+		time.Sleep(3 * time.Second)
+		req, _ := http.NewRequest("GET", apiURL("/deployments/"+deploymentID+"/detail"), nil)
+		body, err := doRequest(req)
+		if err != nil {
+			return err
+		}
+		var dpl struct {
+			Complete bool   `json:"complete"`
+			Error    bool   `json:"error"`
+			ErrorDtl string `json:"error_detail"`
+		}
+		json.Unmarshal(body, &dpl)
+
+		if dpl.Error {
+			stop()
+			if dpl.ErrorDtl != "" {
+				return fmt.Errorf("deployment failed: %s", dpl.ErrorDtl)
+			}
+			return fmt.Errorf("deployment failed")
+		}
+		if dpl.Complete {
+			stop()
+			fmt.Println("\nDeployment complete.")
+			return nil
+		}
+	}
+}
+
+// followDeploymentLog polls deployment logs until complete or error.
+func followDeploymentLog(deploymentID string) error {
+	var lastLen int
+	stop := spin("Deploying...")
+	defer stop()
+
+	for {
+		time.Sleep(3 * time.Second)
+		req, _ := http.NewRequest("GET", apiURL("/deployments/"+deploymentID+"/log"), nil)
+		body, err := doRequest(req)
+		if err != nil {
+			return err
+		}
+		var result struct {
+			Status  string `json:"status"`
+			LogText string `json:"log_text"`
+		}
+		json.Unmarshal(body, &result)
+
+		if len(result.LogText) > lastLen {
+			stop()
+			fmt.Print(result.LogText[lastLen:])
+			lastLen = len(result.LogText)
+			stop = spin("Deploying...")
+		}
+
+		switch result.Status {
+		case "complete", "success":
+			stop()
+			fmt.Println("\nDeployment complete.")
+			return nil
+		case "error", "failed":
+			stop()
+			return fmt.Errorf("deployment failed")
+		}
+	}
 }

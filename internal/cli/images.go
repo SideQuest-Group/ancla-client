@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/spf13/cobra"
 )
@@ -13,6 +14,8 @@ func init() {
 	imagesCmd.AddCommand(imagesListCmd)
 	imagesCmd.AddCommand(imagesBuildCmd)
 	imagesCmd.AddCommand(imagesLogCmd)
+	imagesBuildCmd.Flags().BoolP("follow", "f", false, "Follow build progress until complete")
+	imagesLogCmd.Flags().BoolP("follow", "f", false, "Poll for log updates until build completes")
 }
 
 var imagesCmd = &cobra.Command{
@@ -96,6 +99,11 @@ var imagesBuildCmd = &cobra.Command{
 		}
 		json.Unmarshal(body, &result)
 		fmt.Printf("Build triggered. Image: %s (v%d)\n", result.ImageID, result.Version)
+
+		follow, _ := cmd.Flags().GetBool("follow")
+		if follow && result.ImageID != "" {
+			return followImageBuild(result.ImageID)
+		}
 		return nil
 	},
 }
@@ -125,6 +133,50 @@ var imagesLogCmd = &cobra.Command{
 		} else {
 			fmt.Println("(no log output yet)")
 		}
+
+		follow, _ := cmd.Flags().GetBool("follow")
+		if follow {
+			return followImageBuild(args[0])
+		}
 		return nil
 	},
+}
+
+// followImageBuild polls the image log endpoint until the build completes or errors.
+func followImageBuild(imageID string) error {
+	var lastLen int
+	stop := spin("Building...")
+	defer stop()
+
+	for {
+		time.Sleep(3 * time.Second)
+		req, _ := http.NewRequest("GET", apiURL("/images/"+imageID+"/log"), nil)
+		body, err := doRequest(req)
+		if err != nil {
+			return err
+		}
+		var result struct {
+			Status  string `json:"status"`
+			LogText string `json:"log_text"`
+		}
+		json.Unmarshal(body, &result)
+
+		// Print new log lines
+		if len(result.LogText) > lastLen {
+			stop()
+			fmt.Print(result.LogText[lastLen:])
+			lastLen = len(result.LogText)
+			stop = spin("Building...")
+		}
+
+		switch result.Status {
+		case "built", "success", "complete":
+			stop()
+			fmt.Println("\nBuild complete.")
+			return nil
+		case "error", "failed":
+			stop()
+			return fmt.Errorf("build failed")
+		}
+	}
 }

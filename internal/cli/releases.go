@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/spf13/cobra"
 )
@@ -13,6 +14,7 @@ func init() {
 	releasesCmd.AddCommand(releasesListCmd)
 	releasesCmd.AddCommand(releasesCreateCmd)
 	releasesCmd.AddCommand(releasesDeployCmd)
+	releasesDeployCmd.Flags().BoolP("follow", "f", false, "Follow deployment progress until complete")
 }
 
 var releasesCmd = &cobra.Command{
@@ -120,6 +122,49 @@ var releasesDeployCmd = &cobra.Command{
 		}
 		json.Unmarshal(body, &result)
 		fmt.Printf("Deployment created: %s\n", result.DeploymentID)
+
+		follow, _ := cmd.Flags().GetBool("follow")
+		if follow && result.DeploymentID != "" {
+			return followDeployment(result.DeploymentID)
+		}
 		return nil
 	},
+}
+
+// followReleaseBuild polls a release until its build completes or errors.
+func followReleaseBuild(appID, releaseID string) error {
+	stop := spin("Building release...")
+	defer stop()
+
+	for {
+		time.Sleep(3 * time.Second)
+		req, _ := http.NewRequest("GET", apiURL("/releases/"+appID), nil)
+		body, err := doRequest(req)
+		if err != nil {
+			return err
+		}
+		var result struct {
+			Items []struct {
+				ID    string `json:"id"`
+				Built bool   `json:"built"`
+				Error bool   `json:"error"`
+			} `json:"items"`
+		}
+		json.Unmarshal(body, &result)
+
+		for _, r := range result.Items {
+			if r.ID == releaseID {
+				if r.Error {
+					stop()
+					return fmt.Errorf("release build failed")
+				}
+				if r.Built {
+					stop()
+					fmt.Println("Release build complete.")
+					return nil
+				}
+				break
+			}
+		}
+	}
 }
