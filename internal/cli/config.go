@@ -18,6 +18,7 @@ func init() {
 	configCmd.AddCommand(configDeleteCmd)
 	configCmd.AddCommand(configImportCmd)
 	configImportCmd.Flags().StringP("file", "f", "", "Path to .env file to import")
+	configListCmd.Flags().Bool("show-secrets", false, "Show secret values instead of masking them")
 }
 
 var configCmd = &cobra.Command{
@@ -55,6 +56,16 @@ var configListCmd = &cobra.Command{
 		}
 		if err := json.Unmarshal(body, &configs); err != nil {
 			return fmt.Errorf("parsing response: %w", err)
+		}
+
+		showSecrets, _ := cmd.Flags().GetBool("show-secrets")
+
+		if !showSecrets {
+			for i := range configs {
+				if configs[i].Secret {
+					configs[i].Value = "********"
+				}
+			}
 		}
 
 		if isJSON() {
