@@ -118,8 +118,10 @@ var appsDeployCmd = &cobra.Command{
 	Example: "  ancla apps deploy abc12345",
 	Args:    cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		stop := spin("Deploying...")
 		req, _ := http.NewRequest("POST", apiURL("/applications/"+args[0]+"/deploy"), nil)
 		body, err := doRequest(req)
+		stop()
 		if err != nil {
 			return err
 		}
@@ -149,12 +151,15 @@ var appsScaleCmd = &cobra.Command{
 			counts[proc] = count
 		}
 
+		stop := spin("Scaling...")
 		payload, _ := json.Marshal(map[string]any{"process_counts": counts})
 		req, _ := http.NewRequest("POST", apiURL("/applications/"+args[0]+"/scale"), bytes.NewReader(payload))
 		req.Header.Set("Content-Type", "application/json")
 		if _, err := doRequest(req); err != nil {
+			stop()
 			return err
 		}
+		stop()
 
 		fmt.Println("Scaled successfully.")
 		return nil

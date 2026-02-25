@@ -82,8 +82,10 @@ var imagesBuildCmd = &cobra.Command{
 	Example: "  ancla images build abc12345",
 	Args:    cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		stop := spin("Triggering build...")
 		req, _ := http.NewRequest("POST", apiURL("/images/"+args[0]+"/build"), nil)
 		body, err := doRequest(req)
+		stop()
 		if err != nil {
 			return err
 		}

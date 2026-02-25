@@ -83,8 +83,10 @@ var releasesCreateCmd = &cobra.Command{
 	Example: "  ancla releases create abc12345",
 	Args:    cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		stop := spin("Creating release...")
 		req, _ := http.NewRequest("POST", apiURL("/releases/"+args[0]+"/create"), nil)
 		body, err := doRequest(req)
+		stop()
 		if err != nil {
 			return err
 		}
@@ -105,8 +107,10 @@ var releasesDeployCmd = &cobra.Command{
 	Example: "  ancla releases deploy <release-id>",
 	Args:    cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		stop := spin("Deploying release...")
 		req, _ := http.NewRequest("POST", apiURL("/releases/"+args[0]+"/deploy"), nil)
 		body, err := doRequest(req)
+		stop()
 		if err != nil {
 			return err
 		}
