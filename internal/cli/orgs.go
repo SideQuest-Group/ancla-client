@@ -63,10 +63,11 @@ var orgsListCmd = &cobra.Command{
 }
 
 var orgsGetCmd = &cobra.Command{
-	Use:     "get <slug>",
-	Short:   "Get organization details",
-	Example: "  ancla orgs get my-org",
-	Args:    cobra.ExactArgs(1),
+	Use:               "get <slug>",
+	Short:             "Get organization details",
+	Example:           "  ancla orgs get my-org",
+	Args:              cobra.ExactArgs(1),
+	ValidArgsFunction: completeOrgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		req, _ := http.NewRequest("GET", apiURL("/organizations/"+args[0]), nil)
 		body, err := doRequest(req)

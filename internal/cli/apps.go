@@ -32,10 +32,11 @@ Use sub-commands to list, inspect, deploy, and scale your applications.`,
 }
 
 var appsListCmd = &cobra.Command{
-	Use:     "list <org>/<project>",
-	Short:   "List applications in a project",
-	Example: "  ancla apps list my-org/my-project",
-	Args:    cobra.ExactArgs(1),
+	Use:               "list <org>/<project>",
+	Short:             "List applications in a project",
+	Example:           "  ancla apps list my-org/my-project",
+	Args:              cobra.ExactArgs(1),
+	ValidArgsFunction: completeProjects,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		req, _ := http.NewRequest("GET", apiURL("/applications/"+args[0]), nil)
 		body, err := doRequest(req)

@@ -63,10 +63,11 @@ var projectsListCmd = &cobra.Command{
 }
 
 var projectsGetCmd = &cobra.Command{
-	Use:     "get <org>/<project>",
-	Short:   "Get project details",
-	Example: "  ancla projects get my-org/my-project",
-	Args:    cobra.ExactArgs(1),
+	Use:               "get <org>/<project>",
+	Short:             "Get project details",
+	Example:           "  ancla projects get my-org/my-project",
+	Args:              cobra.ExactArgs(1),
+	ValidArgsFunction: completeProjects,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		req, _ := http.NewRequest("GET", apiURL("/projects/"+args[0]), nil)
 		body, err := doRequest(req)
