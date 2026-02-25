@@ -27,19 +27,22 @@ var settingsCmd = &cobra.Command{
 	GroupID: "config",
 }
 
+// maskSecret masks a secret value, showing only the last 4 characters.
+// For short values (4 chars or fewer), the entire value is masked.
+func maskSecret(val string) string {
+	if len(val) > 4 {
+		return strings.Repeat("*", len(val)-4) + val[len(val)-4:]
+	}
+	return strings.Repeat("*", len(val))
+}
+
 var settingsShowCmd = &cobra.Command{
 	Use:     "show",
 	Short:   "Show current CLI settings",
 	Example: "  ancla settings show",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if cfg.APIKey != "" {
-			masked := cfg.APIKey
-			if len(masked) > 4 {
-				masked = masked[:4] + strings.Repeat("*", len(masked)-4)
-			} else {
-				masked = strings.Repeat("*", len(masked))
-			}
-			fmt.Printf("api_key: %s\n", masked)
+			fmt.Printf("api_key: %s\n", maskSecret(cfg.APIKey))
 		} else {
 			fmt.Printf("api_key: (not set)\n")
 		}
@@ -65,7 +68,11 @@ var settingsSetCmd = &cobra.Command{
 		if err := config.Save(cfg); err != nil {
 			return fmt.Errorf("saving config: %w", err)
 		}
-		fmt.Printf("Set %s = %s\n", key, value)
+		displayValue := value
+		if key == "api_key" {
+			displayValue = maskSecret(value)
+		}
+		fmt.Printf("Set %s = %s\n", key, displayValue)
 		return nil
 	},
 }
