@@ -51,7 +51,7 @@ var projectsListCmd = &cobra.Command{
 		}
 
 		w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-		fmt.Fprintln(w, "ORG/PROJECT\tNAME\tAPPS")
+		fmt.Fprintf(w, "%s\t%s\t%s\n", colorHeader("ORG/PROJECT"), colorHeader("NAME"), colorHeader("APPS"))
 		for _, p := range projects {
 			fmt.Fprintf(w, "%s/%s\t%s\t%d\n", p.OrganizationSlug, p.Slug, p.Name, p.ApplicationCount)
 		}

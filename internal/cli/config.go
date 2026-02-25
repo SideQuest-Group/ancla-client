@@ -57,7 +57,7 @@ var configListCmd = &cobra.Command{
 		}
 
 		w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-		fmt.Fprintln(w, "NAME\tVALUE\tSECRET\tBUILDTIME")
+		fmt.Fprintf(w, "%s\t%s\t%s\t%s\n", colorHeader("NAME"), colorHeader("VALUE"), colorHeader("SECRET"), colorHeader("BUILDTIME"))
 		for _, c := range configs {
 			fmt.Fprintf(w, "%s\t%s\t%v\t%v\n", c.Name, c.Value, c.Secret, c.Buildtime)
 		}

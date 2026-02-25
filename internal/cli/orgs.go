@@ -51,7 +51,7 @@ var orgsListCmd = &cobra.Command{
 		}
 
 		w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-		fmt.Fprintln(w, "SLUG\tNAME\tMEMBERS\tPROJECTS")
+		fmt.Fprintf(w, "%s\t%s\t%s\t%s\n", colorHeader("SLUG"), colorHeader("NAME"), colorHeader("MEMBERS"), colorHeader("PROJECTS"))
 		for _, o := range orgs {
 			fmt.Fprintf(w, "%s\t%s\t%d\t%d\n", o.Slug, o.Name, o.MemberCount, o.ProjectCount)
 		}
@@ -94,7 +94,7 @@ var orgsGetCmd = &cobra.Command{
 		fmt.Printf("Projects: %d  Applications: %d\n\n", org.ProjectCount, org.ApplicationCount)
 		fmt.Println("Members:")
 		w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-		fmt.Fprintln(w, "  USERNAME\tEMAIL\tADMIN")
+		fmt.Fprintf(w, "  %s\t%s\t%s\n", colorHeader("USERNAME"), colorHeader("EMAIL"), colorHeader("ADMIN"))
 		for _, m := range org.Members {
 			fmt.Fprintf(w, "  %s\t%s\t%v\n", m.Username, m.Email, m.Admin)
 		}
