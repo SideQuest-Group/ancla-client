@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"net"
 	"net/http"
@@ -108,6 +107,8 @@ func loginBrowser() error {
 		}
 		// Key was just created by the server — save directly without re-validation
 		cfg.APIKey = result.apiKey
+		cfg.Username = result.username
+		cfg.Email = result.email
 		if err := config.Save(cfg); err != nil {
 			return fmt.Errorf("saving config: %w", err)
 		}
@@ -141,13 +142,14 @@ func loginManual() error {
 	return saveAndVerifyKey(apiKey)
 }
 
-// saveAndVerifyKey validates an API key against the server, fetches the user
-// info, and saves it to the config file.
+// saveAndVerifyKey validates an API key against the server and saves it to the
+// config file. Uses /organizations/ to verify the key since /auth/session only
+// supports cookie-based auth.
 func saveAndVerifyKey(apiKey string) error {
 	client := &http.Client{
 		Transport: &apiKeyTransport{key: apiKey, base: http.DefaultTransport},
 	}
-	req, err := http.NewRequest("GET", apiURL("/auth/session"), nil)
+	req, err := http.NewRequest("GET", apiURL("/organizations/"), nil)
 	if err != nil {
 		return fmt.Errorf("invalid server URL: %w", err)
 	}
@@ -157,22 +159,11 @@ func saveAndVerifyKey(apiKey string) error {
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden {
+		return fmt.Errorf("API key was not accepted by %s", serverURL())
+	}
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("server returned %d — check your API key", resp.StatusCode)
-	}
-
-	var session struct {
-		Authenticated bool `json:"authenticated"`
-		User          *struct {
-			Username string `json:"username"`
-			Email    string `json:"email"`
-		} `json:"user"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&session); err != nil {
-		return fmt.Errorf("unexpected response from server: %w", err)
-	}
-	if !session.Authenticated {
-		return fmt.Errorf("API key was not accepted by %s", serverURL())
 	}
 
 	cfg.APIKey = apiKey
@@ -180,45 +171,46 @@ func saveAndVerifyKey(apiKey string) error {
 		return fmt.Errorf("saving config: %w", err)
 	}
 
-	if session.User != nil {
-		fmt.Printf("\n  Logged in as %s (%s)\n", session.User.Username, session.User.Email)
-	} else {
-		fmt.Println("\n  Logged in successfully.")
-	}
+	fmt.Println("\n  Logged in successfully.")
 	fmt.Printf("  API key saved to %s\n", config.FilePath())
 	return nil
 }
 
 var whoamiCmd = &cobra.Command{
 	Use:     "whoami",
-	Short:   "Show the current authenticated session",
+	Short:   "Show the current authenticated user",
 	Example: "  ancla whoami",
 	GroupID: "auth",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		req, _ := http.NewRequest("GET", apiURL("/auth/session"), nil)
-		body, err := doRequest(req)
-		if err != nil {
-			return err
-		}
-
-		var result struct {
-			Authenticated bool `json:"authenticated"`
-			User          *struct {
-				Username string `json:"username"`
-				Email    string `json:"email"`
-				Admin    bool   `json:"admin"`
-			} `json:"user"`
-		}
-		if err := json.Unmarshal(body, &result); err != nil {
-			return fmt.Errorf("parsing response: %w", err)
-		}
-
-		if !result.Authenticated || result.User == nil {
-			fmt.Println("Not authenticated.")
+		if cfg.APIKey == "" {
+			fmt.Println("Not authenticated. Run 'ancla login' to authenticate.")
 			return nil
 		}
-		fmt.Printf("Username: %s\nEmail:    %s\nAdmin:    %v\n",
-			result.User.Username, result.User.Email, result.User.Admin)
+
+		// Verify the key still works by hitting an authenticated endpoint
+		req, _ := http.NewRequest("GET", apiURL("/organizations/"), nil)
+		_, err := doRequest(req)
+		if err != nil {
+			fmt.Println("Not authenticated (API key is invalid or expired). Run 'ancla login' to re-authenticate.")
+			return nil
+		}
+
+		if isJSON() {
+			return printJSON(map[string]string{
+				"username": cfg.Username,
+				"email":    cfg.Email,
+			})
+		}
+
+		if cfg.Username != "" {
+			fmt.Printf("Username: %s\n", cfg.Username)
+		}
+		if cfg.Email != "" {
+			fmt.Printf("Email:    %s\n", cfg.Email)
+		}
+		if cfg.Username == "" && cfg.Email == "" {
+			fmt.Println("Authenticated (re-login to populate user details)")
+		}
 		return nil
 	},
 }

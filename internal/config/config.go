@@ -13,8 +13,10 @@ import (
 
 // Config holds the CLI configuration.
 type Config struct {
-	Server string `mapstructure:"server"`
-	APIKey string `mapstructure:"api_key"`
+	Server   string `mapstructure:"server"`
+	APIKey   string `mapstructure:"api_key"`
+	Username string `mapstructure:"username"`
+	Email    string `mapstructure:"email"`
 }
 
 // homeConfigDir returns the path to ~/.ancla/.
@@ -120,6 +122,12 @@ func Save(cfg *Config) error {
 	v := viper.New()
 	v.Set("server", cfg.Server)
 	v.Set("api_key", cfg.APIKey)
+	if cfg.Username != "" {
+		v.Set("username", cfg.Username)
+	}
+	if cfg.Email != "" {
+		v.Set("email", cfg.Email)
+	}
 	path := filepath.Join(dir, "config.yaml")
 	return v.WriteConfigAs(path)
 }
