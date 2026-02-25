@@ -19,6 +19,7 @@ func init() {
 	configCmd.AddCommand(configImportCmd)
 	configImportCmd.Flags().StringP("file", "f", "", "Path to .env file to import")
 	configListCmd.Flags().Bool("show-secrets", false, "Show secret values instead of masking them")
+	configDeleteCmd.Flags().BoolP("yes", "y", false, "Skip confirmation prompt")
 }
 
 var configCmd = &cobra.Command{
@@ -112,6 +113,10 @@ var configDeleteCmd = &cobra.Command{
 	Example: "  ancla config delete abc12345 <config-id>",
 	Args:    cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if !confirmAction(cmd, "This will delete the configuration variable.") {
+			fmt.Println("Aborted.")
+			return nil
+		}
 		req, _ := http.NewRequest("DELETE", apiURL("/configurations/"+args[0]+"/"+args[1]), nil)
 		if _, err := doRequest(req); err != nil {
 			return err

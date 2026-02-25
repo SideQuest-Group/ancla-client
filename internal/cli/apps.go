@@ -16,6 +16,7 @@ func init() {
 	appsCmd.AddCommand(appsDeployCmd)
 	appsCmd.AddCommand(appsScaleCmd)
 	appsCmd.AddCommand(appsStatusCmd)
+	appsScaleCmd.Flags().BoolP("yes", "y", false, "Skip confirmation prompt")
 }
 
 var appsCmd = &cobra.Command{
@@ -129,7 +130,10 @@ var appsDeployCmd = &cobra.Command{
 		var result struct {
 			ImageID string `json:"image_id"`
 		}
-		json.Unmarshal(body, &result)
+		if err := json.Unmarshal(body, &result); err != nil {
+			fmt.Println("Deploy likely succeeded, but the response could not be parsed (unexpected format).")
+			return nil
+		}
 		fmt.Printf("Deploy triggered. Image ID: %s\n", result.ImageID)
 		return nil
 	},
@@ -149,6 +153,18 @@ var appsScaleCmd = &cobra.Command{
 				return fmt.Errorf("invalid scale argument %q (expected process=count)", arg)
 			}
 			counts[proc] = count
+		}
+
+		// Warn when scaling any process to 0 — this effectively stops it.
+		for proc, count := range counts {
+			if count == 0 {
+				msg := fmt.Sprintf("Scaling %q to 0 will stop the process.", proc)
+				if !confirmAction(cmd, msg) {
+					fmt.Println("Aborted.")
+					return nil
+				}
+				break // only need to confirm once
+			}
 		}
 
 		stop := spin("Scaling...")
@@ -183,7 +199,9 @@ var appsStatusCmd = &cobra.Command{
 			Release *struct{ Status string } `json:"release"`
 			Deploy  *struct{ Status string } `json:"deploy"`
 		}
-		json.Unmarshal(body, &status)
+		if err := json.Unmarshal(body, &status); err != nil {
+			return fmt.Errorf("parsing response: %w", err)
+		}
 
 		if isJSON() {
 			return printJSON(status)
