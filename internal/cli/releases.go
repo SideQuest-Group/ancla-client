@@ -97,7 +97,10 @@ var releasesCreateCmd = &cobra.Command{
 			ReleaseID string `json:"release_id"`
 			Version   int    `json:"version"`
 		}
-		json.Unmarshal(body, &result)
+		if err := json.Unmarshal(body, &result); err != nil {
+			fmt.Println("Release likely created, but the response could not be parsed (unexpected format).")
+			return nil
+		}
 		fmt.Printf("Release created: %s (v%d)\n", result.ReleaseID, result.Version)
 		return nil
 	},
@@ -120,7 +123,10 @@ var releasesDeployCmd = &cobra.Command{
 		var result struct {
 			DeploymentID string `json:"deployment_id"`
 		}
-		json.Unmarshal(body, &result)
+		if err := json.Unmarshal(body, &result); err != nil {
+			fmt.Println("Deployment likely created, but the response could not be parsed (unexpected format).")
+			return nil
+		}
 		fmt.Printf("Deployment created: %s\n", result.DeploymentID)
 
 		follow, _ := cmd.Flags().GetBool("follow")
@@ -150,7 +156,9 @@ func followReleaseBuild(appID, releaseID string) error {
 				Error bool   `json:"error"`
 			} `json:"items"`
 		}
-		json.Unmarshal(body, &result)
+		if err := json.Unmarshal(body, &result); err != nil {
+			return fmt.Errorf("parsing poll response: %w", err)
+		}
 
 		for _, r := range result.Items {
 			if r.ID == releaseID {

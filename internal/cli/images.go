@@ -97,7 +97,10 @@ var imagesBuildCmd = &cobra.Command{
 			ImageID string `json:"image_id"`
 			Version int    `json:"version"`
 		}
-		json.Unmarshal(body, &result)
+		if err := json.Unmarshal(body, &result); err != nil {
+			fmt.Println("Build likely triggered, but the response could not be parsed (unexpected format).")
+			return nil
+		}
 		fmt.Printf("Build triggered. Image: %s (v%d)\n", result.ImageID, result.Version)
 
 		follow, _ := cmd.Flags().GetBool("follow")
@@ -125,7 +128,9 @@ var imagesLogCmd = &cobra.Command{
 			Version int    `json:"version"`
 			LogText string `json:"log_text"`
 		}
-		json.Unmarshal(body, &result)
+		if err := json.Unmarshal(body, &result); err != nil {
+			return fmt.Errorf("parsing response: %w", err)
+		}
 
 		fmt.Printf("Image v%d — %s\n\n", result.Version, result.Status)
 		if result.LogText != "" {
@@ -159,7 +164,9 @@ func followImageBuild(imageID string) error {
 			Status  string `json:"status"`
 			LogText string `json:"log_text"`
 		}
-		json.Unmarshal(body, &result)
+		if err := json.Unmarshal(body, &result); err != nil {
+			return fmt.Errorf("parsing poll response: %w", err)
+		}
 
 		// Print new log lines
 		if len(result.LogText) > lastLen {
