@@ -41,6 +41,11 @@ applications, images, releases, deployments, and configuration.`,
 	},
 }
 
+// RootCmd returns the root cobra.Command for documentation generation.
+func RootCmd() *cobra.Command {
+	return rootCmd
+}
+
 // Execute runs the root command.
 func Execute() error {
 	return rootCmd.Execute()

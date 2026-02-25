@@ -1,0 +1,91 @@
+/* Ancla docs — branded to match the main site */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+  --sl-font: 'Inter', system-ui, sans-serif;
+  --sl-font-mono: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+/*
+ * Starlight color semantics (confusing but important):
+ *   --sl-color-white  = brightest text (headings)
+ *   --sl-color-gray-1 = lighter text/borders
+ *   ...
+ *   --sl-color-gray-6 = darkest surfaces
+ *   --sl-color-black  = page background
+ *
+ * In LIGHT mode these INVERT:
+ *   --sl-color-white  = darkest text
+ *   --sl-color-gray-6 = lightest surface
+ *   --sl-color-black  = page background (white)
+ */
+
+/* Dark theme */
+:root {
+  --sl-color-accent-low: #0c2e38;
+  --sl-color-accent: #0891b2;
+  --sl-color-accent-high: #22d3ee;
+
+  --sl-color-white: #e0e6eb;
+  --sl-color-gray-1: #b0bac2;
+  --sl-color-gray-2: #6e7a84;
+  --sl-color-gray-3: #3d454d;
+  --sl-color-gray-4: #23282e;
+  --sl-color-gray-5: #191d22;
+  --sl-color-gray-6: #131619;
+  --sl-color-black: #0d0f12;
+}
+
+/* Light theme — inverted scale per Starlight convention */
+:root[data-theme='light'] {
+  --sl-color-accent-low: #e0f5f9;
+  --sl-color-accent: #0891b2;
+  --sl-color-accent-high: #0a4f5f;
+
+  /* white = darkest text in light mode */
+  --sl-color-white: #151a1e;
+  --sl-color-gray-1: #23292e;
+  --sl-color-gray-2: #3b4249;
+  --sl-color-gray-3: #5e666e;
+  --sl-color-gray-4: #8c939a;
+  --sl-color-gray-5: #c8ccd0;
+  --sl-color-gray-6: #eef0f2;
+  /* black = page background in light mode */
+  --sl-color-black: #fafbfc;
+  --sl-color-gray-7: #f5f6f7;
+}
+
+/* Frosted glass nav */
+starlight-header {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* Sidebar active link */
+nav.sidebar a[aria-current='page'] {
+  border-left-color: var(--sl-color-accent-high);
+}
+
+/* Code blocks — darker inset in dark mode */
+:root:not([data-theme='light']) .expressive-code {
+  --ec-codeBg: #0a0c0f;
+  --ec-codeBrdCol: rgba(255, 255, 255, 0.06);
+}
+
+/* Inline code */
+:not(pre) > code {
+  background: var(--sl-color-bg-inline-code);
+  border-radius: 4px;
+  padding: 0.15em 0.35em;
+}
+
+/* Hero CTA gradient */
+.hero-html .action.primary {
+  background: linear-gradient(135deg, #22d3ee, #0891b2);
+  border: none;
+  color: #fff;
+}
+.hero-html .action.primary:hover {
+  background: linear-gradient(135deg, #67e8f9, #06b6d4);
+}

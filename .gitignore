@@ -10,3 +10,16 @@ dist/
 *.test
 *.out
 .DS_Store
+
+# Generated docs (rebuilt via make docs-gen)
+docs/src/content/docs/cli/**/*.md
+docs/src/content/docs/cli/*.md
+docs/src/content/docs/api/authentication.md
+docs/src/content/docs/api/organizations.md
+docs/src/content/docs/api/projects.md
+docs/src/content/docs/api/applications.md
+docs/src/content/docs/api/images.md
+docs/src/content/docs/api/releases.md
+docs/src/content/docs/api/deployments.md
+docs/src/content/docs/api/configuration.md
+docs/src/content/docs/api/integrations.md

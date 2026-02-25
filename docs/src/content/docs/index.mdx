@@ -1,0 +1,32 @@
+---
+title: Ancla
+description: Documentation for the Ancla deployment platform — CLI, API, SDK, and OpenTofu provider.
+template: splash
+hero:
+  tagline: Ship fast. Sleep well. — CLI, API, SDK, and infrastructure-as-code for the Ancla platform.
+  actions:
+    - text: Get Started
+      link: /guides/getting-started/
+      icon: right-arrow
+      variant: primary
+    - text: API Reference
+      link: /api/
+      icon: external
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+<CardGrid stagger>
+  <Card title="CLI" icon="laptop">
+    Install the `ancla` command-line tool to deploy and manage applications from your terminal.
+  </Card>
+  <Card title="REST API" icon="open-book">
+    Integrate directly with the Ancla API — full reference for every endpoint.
+  </Card>
+  <Card title="Python SDK" icon="seti:python">
+    Programmatic access to Ancla from Python applications and scripts.
+  </Card>
+  <Card title="OpenTofu Provider" icon="puzzle">
+    Manage Ancla resources with infrastructure-as-code.
+  </Card>
+</CardGrid>

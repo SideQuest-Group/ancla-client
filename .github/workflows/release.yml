@@ -8,6 +8,7 @@ on:
 permissions:
   contents: write
   id-token: write
+  attestations: write
 
 jobs:
   goreleaser:
@@ -20,6 +21,12 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: "1.24"
+
+      - name: Install cosign
+        uses: sigstore/cosign-installer@v3
+
+      - name: Install syft
+        uses: anchore/sbom-action/download-syft@v0
 
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6
@@ -69,61 +76,99 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install wheel tools
-        run: pip install wheel
-
       - name: Build wheel
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
           PLAT="${{ matrix.plat }}"
           ARCHIVE_PREFIX="ancla_${VERSION}_${{ matrix.goos }}_${{ matrix.goarch }}"
 
-          # Find and extract the archive
+          mkdir -p staging dist_wheels
+
+          # Extract the platform binary
           if [ "${{ matrix.goos }}" = "windows" ]; then
             ARCHIVE=$(ls dist/${ARCHIVE_PREFIX}.zip 2>/dev/null | head -1)
             unzip -o "$ARCHIVE" -d staging/
-            BINARY="staging/ancla.exe"
+            BIN_NAME="ancla.exe"
           else
             ARCHIVE=$(ls dist/${ARCHIVE_PREFIX}.tar.gz 2>/dev/null | head -1)
             tar xzf "$ARCHIVE" -C staging/ --strip-components=0 2>/dev/null || tar xzf "$ARCHIVE" -C staging/
-            BINARY="staging/ancla"
+            BIN_NAME="ancla"
           fi
 
-          chmod +x "$BINARY" 2>/dev/null || true
+          chmod +x "staging/${BIN_NAME}" 2>/dev/null || true
 
-          # Build the wheel
+          # Assemble wheel structure
+          DIST_INFO="ancla-${VERSION}.dist-info"
+          DATA_DIR="ancla-${VERSION}.data/scripts"
           WHEEL_DIR="wheel_build"
-          mkdir -p "${WHEEL_DIR}/ancla-${VERSION}.data/scripts"
-          cp "$BINARY" "${WHEEL_DIR}/ancla-${VERSION}.data/scripts/"
+          mkdir -p "${WHEEL_DIR}/${DATA_DIR}" "${WHEEL_DIR}/${DIST_INFO}"
 
-          # Write metadata
-          mkdir -p "${WHEEL_DIR}/ancla-${VERSION}.dist-info"
-          cat > "${WHEEL_DIR}/ancla-${VERSION}.dist-info/METADATA" <<PYEOF
+          cp "staging/${BIN_NAME}" "${WHEEL_DIR}/${DATA_DIR}/"
+
+          # PEP 566 metadata
+          cat > "${WHEEL_DIR}/${DIST_INFO}/METADATA" <<METAEOF
           Metadata-Version: 2.1
           Name: ancla
           Version: ${VERSION}
           Summary: CLI client for the Ancla deployment platform
+          Author-email: SideQuest Labs <engineering@sidequestlabs.dev>
           Home-page: https://github.com/SideQuest-Group/ancla-client
+          Project-URL: Documentation, https://docs.ancla.dev
+          Project-URL: Source, https://github.com/SideQuest-Group/ancla-client
+          Project-URL: Issues, https://github.com/SideQuest-Group/ancla-client/issues
           License: Apache-2.0
+          Requires-Python: >=3.9
           Classifier: Development Status :: 4 - Beta
           Classifier: Environment :: Console
+          Classifier: Intended Audience :: Developers
+          Classifier: Intended Audience :: System Administrators
           Classifier: License :: OSI Approved :: Apache Software License
           Classifier: Operating System :: OS Independent
+          Classifier: Programming Language :: Other
           Classifier: Topic :: System :: Systems Administration
-          PYEOF
+          Description-Content-Type: text/markdown
 
-          cat > "${WHEEL_DIR}/ancla-${VERSION}.dist-info/WHEEL" <<PYEOF
+          # Ancla CLI
+
+          Command-line client for the [Ancla](https://ancla.dev) deployment platform.
+
+          ## Install
+
+          \`\`\`bash
+          pip install ancla
+          \`\`\`
+
+          Full documentation: https://docs.ancla.dev
+          METAEOF
+
+          # PEP 427 wheel metadata
+          cat > "${WHEEL_DIR}/${DIST_INFO}/WHEEL" <<WHEELEOF
           Wheel-Version: 1.0
           Generator: ancla-release
           Root-Is-Purelib: false
           Tag: py3-none-${PLAT}
-          PYEOF
+          WHEELEOF
 
-          cat > "${WHEEL_DIR}/ancla-${VERSION}.dist-info/RECORD" <<PYEOF
-          PYEOF
+          # top_level.txt (no Python packages — binary-only wheel)
+          touch "${WHEEL_DIR}/${DIST_INFO}/top_level.txt"
 
-          # Pack the wheel
+          # PEP 376 RECORD with sha256 digests
           cd "${WHEEL_DIR}"
+          : > "${DIST_INFO}/RECORD"
+          for f in $(find . -type f ! -path "./${DIST_INFO}/RECORD"); do
+            REL="${f#./}"
+            HASH=$(python3 -c "
+          import hashlib, base64
+          with open('${REL}', 'rb') as fh:
+              digest = hashlib.sha256(fh.read()).digest()
+          print('sha256=' + base64.urlsafe_b64encode(digest).rstrip(b'=').decode())
+          ")
+            SIZE=$(wc -c < "${REL}" | tr -d ' ')
+            echo "${REL},${HASH},${SIZE}" >> "${DIST_INFO}/RECORD"
+          done
+          echo "${DIST_INFO}/RECORD,," >> "${DIST_INFO}/RECORD"
+
+          # Pack wheel
           WHEEL_NAME="ancla-${VERSION}-py3-none-${PLAT}.whl"
           zip -r "../dist_wheels/${WHEEL_NAME}" .
           cd ..
@@ -140,7 +185,9 @@ jobs:
     runs-on: ubuntu-latest
     environment: pypi
     permissions:
+      contents: write
       id-token: write
+      attestations: write
     steps:
       - name: Download all wheels
         uses: actions/download-artifact@v4
@@ -149,7 +196,28 @@ jobs:
           path: dist/
           merge-multiple: true
 
+      - name: Generate SHA256 checksums for wheels
+        run: |
+          cd dist
+          sha256sum *.whl | tee ../wheel-checksums-sha256.txt
+
+      - name: Generate GitHub artifact attestations
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: "dist/*.whl"
+
+      - name: Upload wheels and checksums to GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload "${{ github.ref_name }}" \
+            dist/*.whl \
+            wheel-checksums-sha256.txt \
+            --repo "${{ github.repository }}" \
+            --clobber
+
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: dist/
+          attestations: true

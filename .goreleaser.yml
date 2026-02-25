@@ -28,6 +28,24 @@ archives:
 
 checksum:
   name_template: "checksums.txt"
+  algorithm: sha256
+
+signs:
+  - cmd: cosign
+    artifacts: checksum
+    output: true
+    args:
+      - sign-blob
+      - --yes
+      - --bundle=${signature}
+      - ${artifact}
+
+sboms:
+  - artifacts: archive
+    cmd: syft
+    args:
+      - ${artifact}
+      - --output=spdx-json=${document}
 
 changelog:
   sort: asc
@@ -41,3 +59,4 @@ release:
   github:
     owner: SideQuest-Group
     name: ancla-client
+  replace_existing_artifacts: true
