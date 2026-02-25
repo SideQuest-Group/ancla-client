@@ -1,0 +1,155 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  goreleaser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          version: "~> v2"
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload archives for PyPI job
+        uses: actions/upload-artifact@v4
+        with:
+          name: goreleaser-archives
+          path: dist/ancla_*
+          retention-days: 1
+
+  pypi-wheels:
+    needs: goreleaser
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+            plat: manylinux_2_17_x86_64.manylinux2014_x86_64
+          - goos: linux
+            goarch: arm64
+            plat: manylinux_2_17_aarch64.manylinux2014_aarch64
+          - goos: darwin
+            goarch: amd64
+            plat: macosx_10_9_x86_64
+          - goos: darwin
+            goarch: arm64
+            plat: macosx_11_0_arm64
+          - goos: windows
+            goarch: amd64
+            plat: win_amd64
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: goreleaser-archives
+          path: dist/
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install wheel tools
+        run: pip install wheel
+
+      - name: Build wheel
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          PLAT="${{ matrix.plat }}"
+          ARCHIVE_PREFIX="ancla_${VERSION}_${{ matrix.goos }}_${{ matrix.goarch }}"
+
+          # Find and extract the archive
+          if [ "${{ matrix.goos }}" = "windows" ]; then
+            ARCHIVE=$(ls dist/${ARCHIVE_PREFIX}.zip 2>/dev/null | head -1)
+            unzip -o "$ARCHIVE" -d staging/
+            BINARY="staging/ancla.exe"
+          else
+            ARCHIVE=$(ls dist/${ARCHIVE_PREFIX}.tar.gz 2>/dev/null | head -1)
+            tar xzf "$ARCHIVE" -C staging/ --strip-components=0 2>/dev/null || tar xzf "$ARCHIVE" -C staging/
+            BINARY="staging/ancla"
+          fi
+
+          chmod +x "$BINARY" 2>/dev/null || true
+
+          # Build the wheel
+          WHEEL_DIR="wheel_build"
+          mkdir -p "${WHEEL_DIR}/ancla-${VERSION}.data/scripts"
+          cp "$BINARY" "${WHEEL_DIR}/ancla-${VERSION}.data/scripts/"
+
+          # Write metadata
+          mkdir -p "${WHEEL_DIR}/ancla-${VERSION}.dist-info"
+          cat > "${WHEEL_DIR}/ancla-${VERSION}.dist-info/METADATA" <<PYEOF
+          Metadata-Version: 2.1
+          Name: ancla
+          Version: ${VERSION}
+          Summary: CLI client for the Ancla deployment platform
+          Home-page: https://github.com/SideQuest-Group/ancla-client
+          License: Apache-2.0
+          Classifier: Development Status :: 4 - Beta
+          Classifier: Environment :: Console
+          Classifier: License :: OSI Approved :: Apache Software License
+          Classifier: Operating System :: OS Independent
+          Classifier: Topic :: System :: Systems Administration
+          PYEOF
+
+          cat > "${WHEEL_DIR}/ancla-${VERSION}.dist-info/WHEEL" <<PYEOF
+          Wheel-Version: 1.0
+          Generator: ancla-release
+          Root-Is-Purelib: false
+          Tag: py3-none-${PLAT}
+          PYEOF
+
+          cat > "${WHEEL_DIR}/ancla-${VERSION}.dist-info/RECORD" <<PYEOF
+          PYEOF
+
+          # Pack the wheel
+          cd "${WHEEL_DIR}"
+          WHEEL_NAME="ancla-${VERSION}-py3-none-${PLAT}.whl"
+          zip -r "../dist_wheels/${WHEEL_NAME}" .
+          cd ..
+
+      - name: Upload wheel
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheel-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: dist_wheels/*.whl
+          retention-days: 1
+
+  publish-pypi:
+    needs: pypi-wheels
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+      - name: Download all wheels
+        uses: actions/download-artifact@v4
+        with:
+          pattern: wheel-*
+          path: dist/
+          merge-multiple: true
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist/
