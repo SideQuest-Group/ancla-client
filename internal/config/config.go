@@ -17,6 +17,11 @@ type Config struct {
 	APIKey   string `mapstructure:"api_key"`
 	Username string `mapstructure:"username"`
 	Email    string `mapstructure:"email"`
+
+	// Link context — stored in local .ancla/config.yaml only
+	Org     string `mapstructure:"org"`
+	Project string `mapstructure:"project"`
+	App     string `mapstructure:"app"`
 }
 
 // homeConfigDir returns the path to ~/.ancla/.
@@ -130,4 +135,49 @@ func Save(cfg *Config) error {
 	}
 	path := filepath.Join(dir, "config.yaml")
 	return v.WriteConfigAs(path)
+}
+
+// SaveLocal writes link context (org, project, app) to .ancla/config.yaml
+// in the current working directory, creating the directory if needed.
+func SaveLocal(cfg *Config) error {
+	dir, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("getting working directory: %w", err)
+	}
+	localDir := filepath.Join(dir, ".ancla")
+	if err := os.MkdirAll(localDir, 0o755); err != nil {
+		return fmt.Errorf("creating .ancla directory: %w", err)
+	}
+	v := viper.New()
+	if cfg.Org != "" {
+		v.Set("org", cfg.Org)
+	}
+	if cfg.Project != "" {
+		v.Set("project", cfg.Project)
+	}
+	if cfg.App != "" {
+		v.Set("app", cfg.App)
+	}
+	path := filepath.Join(localDir, "config.yaml")
+	return v.WriteConfigAs(path)
+}
+
+// RemoveLocal deletes the .ancla/config.yaml in the current working directory.
+func RemoveLocal() error {
+	dir, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("getting working directory: %w", err)
+	}
+	path := filepath.Join(dir, ".ancla", "config.yaml")
+	if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("removing local config: %w", err)
+	}
+	// Try to remove .ancla dir if empty
+	os.Remove(filepath.Join(dir, ".ancla"))
+	return nil
+}
+
+// IsLinked returns true if the config has any link context set.
+func (c *Config) IsLinked() bool {
+	return c.Org != "" || c.Project != "" || c.App != ""
 }

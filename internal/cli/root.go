@@ -63,6 +63,7 @@ func init() {
 
 	rootCmd.AddGroup(
 		&cobra.Group{ID: "auth", Title: "Auth & Identity:"},
+		&cobra.Group{ID: "workflow", Title: "Workflow:"},
 		&cobra.Group{ID: "resources", Title: "Resources:"},
 		&cobra.Group{ID: "config", Title: "Configuration:"},
 	)
