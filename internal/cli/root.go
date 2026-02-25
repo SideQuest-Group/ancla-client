@@ -17,6 +17,7 @@ var (
 	cfgFile      string
 	outputFormat string
 	jsonFlag     bool
+	quietFlag    bool
 	cfg          *config.Config
 )
 
@@ -60,6 +61,7 @@ func init() {
 	_ = rootCmd.PersistentFlags().MarkHidden("server")
 	rootCmd.PersistentFlags().StringVarP(&outputFormat, "output", "o", "table", "Output format: table or json")
 	rootCmd.PersistentFlags().BoolVar(&jsonFlag, "json", false, "Shorthand for --output json")
+	rootCmd.PersistentFlags().BoolVarP(&quietFlag, "quiet", "q", false, "Suppress non-essential output")
 
 	rootCmd.AddGroup(
 		&cobra.Group{ID: "auth", Title: "Auth & Identity:"},
@@ -72,6 +74,12 @@ func init() {
 // isJSON returns true when the user requested JSON output.
 func isJSON() bool {
 	return jsonFlag || outputFormat == "json"
+}
+
+// isQuiet returns true when the user requested quiet/scripting mode.
+// In quiet mode, only essential output (IDs, errors) is printed.
+func isQuiet() bool {
+	return quietFlag
 }
 
 // printJSON marshals v as indented JSON and writes it to stdout.
