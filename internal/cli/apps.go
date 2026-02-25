@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"os"
-	"text/tabwriter"
 
 	"github.com/spf13/cobra"
 )
@@ -53,12 +51,12 @@ var appsListCmd = &cobra.Command{
 			return printJSON(apps)
 		}
 
-		w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-		fmt.Fprintf(w, "%s\t%s\t%s\n", colorHeader("SLUG"), colorHeader("NAME"), colorHeader("PLATFORM"))
+		var rows [][]string
 		for _, a := range apps {
-			fmt.Fprintf(w, "%s\t%s\t%s\n", a.Slug, a.Name, a.Platform)
+			rows = append(rows, []string{a.Slug, a.Name, a.Platform})
 		}
-		return w.Flush()
+		table([]string{"SLUG", "NAME", "PLATFORM"}, rows)
+		return nil
 	},
 }
 
@@ -180,23 +178,21 @@ var appsStatusCmd = &cobra.Command{
 			return printJSON(status)
 		}
 
-		w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-		fmt.Fprintf(w, "%s\t%s\n", colorHeader("STAGE"), colorHeader("STATUS"))
+		var rows [][]string
+		buildS, relS, depS := "-", "-", "-"
 		if status.Build != nil {
-			fmt.Fprintf(w, "Build\t%s\n", colorStatus(status.Build.Status))
-		} else {
-			fmt.Fprintf(w, "Build\t-\n")
+			buildS = colorStatus(status.Build.Status)
 		}
 		if status.Release != nil {
-			fmt.Fprintf(w, "Release\t%s\n", colorStatus(status.Release.Status))
-		} else {
-			fmt.Fprintf(w, "Release\t-\n")
+			relS = colorStatus(status.Release.Status)
 		}
 		if status.Deploy != nil {
-			fmt.Fprintf(w, "Deploy\t%s\n", colorStatus(status.Deploy.Status))
-		} else {
-			fmt.Fprintf(w, "Deploy\t-\n")
+			depS = colorStatus(status.Deploy.Status)
 		}
-		return w.Flush()
+		rows = append(rows, []string{"Build", buildS})
+		rows = append(rows, []string{"Release", relS})
+		rows = append(rows, []string{"Deploy", depS})
+		table([]string{"STAGE", "STATUS"}, rows)
+		return nil
 	},
 }

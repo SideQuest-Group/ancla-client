@@ -4,10 +4,13 @@ LDFLAGS  = -s -w \
            -X github.com/SideQuest-Group/ancla-client/internal/cli.Version=$(VERSION) \
            -X github.com/SideQuest-Group/ancla-client/internal/cli.Commit=$(COMMIT)
 
-.PHONY: build test vet fmt clean sync-openapi docs docs-dev docs-serve docs-gen
+.PHONY: build install test vet fmt clean sync-openapi docs docs-dev docs-serve docs-gen
 
 build: ## Build the ancla binary
 	go build -ldflags '$(LDFLAGS)' -o dist/ancla ./cmd/ancla
+
+install: build ## Build and install ancla to $GOBIN
+	install dist/ancla $(shell go env GOBIN 2>/dev/null || echo $(shell go env GOPATH)/bin)/ancla
 
 test: ## Run tests
 	go test ./...

@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"os"
-	"text/tabwriter"
 
 	"github.com/spf13/cobra"
 )
@@ -50,12 +48,12 @@ var orgsListCmd = &cobra.Command{
 			return printJSON(orgs)
 		}
 
-		w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-		fmt.Fprintf(w, "%s\t%s\t%s\t%s\n", colorHeader("SLUG"), colorHeader("NAME"), colorHeader("MEMBERS"), colorHeader("PROJECTS"))
+		var rows [][]string
 		for _, o := range orgs {
-			fmt.Fprintf(w, "%s\t%s\t%d\t%d\n", o.Slug, o.Name, o.MemberCount, o.ProjectCount)
+			rows = append(rows, []string{o.Slug, o.Name, fmt.Sprintf("%d", o.MemberCount), fmt.Sprintf("%d", o.ProjectCount)})
 		}
-		return w.Flush()
+		table([]string{"SLUG", "NAME", "MEMBERS", "PROJECTS"}, rows)
+		return nil
 	},
 }
 
@@ -93,11 +91,11 @@ var orgsGetCmd = &cobra.Command{
 		fmt.Printf("Organization: %s (%s)\n", org.Name, org.Slug)
 		fmt.Printf("Projects: %d  Applications: %d\n\n", org.ProjectCount, org.ApplicationCount)
 		fmt.Println("Members:")
-		w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-		fmt.Fprintf(w, "  %s\t%s\t%s\n", colorHeader("USERNAME"), colorHeader("EMAIL"), colorHeader("ADMIN"))
+		var rows [][]string
 		for _, m := range org.Members {
-			fmt.Fprintf(w, "  %s\t%s\t%v\n", m.Username, m.Email, m.Admin)
+			rows = append(rows, []string{m.Username, m.Email, fmt.Sprintf("%v", m.Admin)})
 		}
-		return w.Flush()
+		table([]string{"USERNAME", "EMAIL", "ADMIN"}, rows)
+		return nil
 	},
 }

@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"os"
 	"strings"
-	"text/tabwriter"
 
 	"github.com/spf13/cobra"
 )
@@ -56,12 +55,12 @@ var configListCmd = &cobra.Command{
 			return printJSON(configs)
 		}
 
-		w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-		fmt.Fprintf(w, "%s\t%s\t%s\t%s\n", colorHeader("NAME"), colorHeader("VALUE"), colorHeader("SECRET"), colorHeader("BUILDTIME"))
+		var rows [][]string
 		for _, c := range configs {
-			fmt.Fprintf(w, "%s\t%s\t%v\t%v\n", c.Name, c.Value, c.Secret, c.Buildtime)
+			rows = append(rows, []string{c.Name, c.Value, fmt.Sprintf("%v", c.Secret), fmt.Sprintf("%v", c.Buildtime)})
 		}
-		return w.Flush()
+		table([]string{"NAME", "VALUE", "SECRET", "BUILDTIME"}, rows)
+		return nil
 	},
 }
 

@@ -16,6 +16,7 @@ import (
 var (
 	cfgFile      string
 	outputFormat string
+	jsonFlag     bool
 	cfg          *config.Config
 )
 
@@ -58,6 +59,7 @@ func init() {
 	rootCmd.PersistentFlags().String("api-key", "", "API key for authentication")
 	_ = rootCmd.PersistentFlags().MarkHidden("server")
 	rootCmd.PersistentFlags().StringVarP(&outputFormat, "output", "o", "table", "Output format: table or json")
+	rootCmd.PersistentFlags().BoolVar(&jsonFlag, "json", false, "Shorthand for --output json")
 
 	rootCmd.AddGroup(
 		&cobra.Group{ID: "auth", Title: "Auth & Identity:"},
@@ -68,7 +70,7 @@ func init() {
 
 // isJSON returns true when the user requested JSON output.
 func isJSON() bool {
-	return outputFormat == "json"
+	return jsonFlag || outputFormat == "json"
 }
 
 // printJSON marshals v as indented JSON and writes it to stdout.

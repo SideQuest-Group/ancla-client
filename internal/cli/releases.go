@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"os"
-	"text/tabwriter"
 
 	"github.com/spf13/cobra"
 )
@@ -55,8 +53,7 @@ var releasesListCmd = &cobra.Command{
 			return printJSON(result)
 		}
 
-		w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-		fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\n", colorHeader("VERSION"), colorHeader("ID"), colorHeader("PLATFORM"), colorHeader("STATUS"), colorHeader("CREATED"))
+		var rows [][]string
 		for _, r := range result.Items {
 			status := "building"
 			if r.Error {
@@ -68,9 +65,10 @@ var releasesListCmd = &cobra.Command{
 			if len(id) > 8 {
 				id = id[:8]
 			}
-			fmt.Fprintf(w, "v%d\t%s\t%s\t%s\t%s\n", r.Version, id, r.Platform, colorStatus(status), r.Created)
+			rows = append(rows, []string{fmt.Sprintf("v%d", r.Version), id, r.Platform, colorStatus(status), r.Created})
 		}
-		return w.Flush()
+		table([]string{"VERSION", "ID", "PLATFORM", "STATUS", "CREATED"}, rows)
+		return nil
 	},
 }
 

@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"os"
-	"text/tabwriter"
 
 	"github.com/spf13/cobra"
 )
@@ -50,12 +48,12 @@ var projectsListCmd = &cobra.Command{
 			return printJSON(projects)
 		}
 
-		w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-		fmt.Fprintf(w, "%s\t%s\t%s\n", colorHeader("ORG/PROJECT"), colorHeader("NAME"), colorHeader("APPS"))
+		var rows [][]string
 		for _, p := range projects {
-			fmt.Fprintf(w, "%s/%s\t%s\t%d\n", p.OrganizationSlug, p.Slug, p.Name, p.ApplicationCount)
+			rows = append(rows, []string{p.OrganizationSlug + "/" + p.Slug, p.Name, fmt.Sprintf("%d", p.ApplicationCount)})
 		}
-		return w.Flush()
+		table([]string{"ORG/PROJECT", "NAME", "APPS"}, rows)
+		return nil
 	},
 }
 
