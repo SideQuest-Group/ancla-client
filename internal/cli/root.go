@@ -40,6 +40,8 @@ applications, images, releases, deployments, and configuration.`,
 		if k, _ := cmd.Flags().GetString("api-key"); k != "" {
 			cfg.APIKey = k
 		}
+		// Non-blocking update check (runs in background goroutine)
+		checkForUpdate()
 		return nil
 	},
 }
