@@ -1,0 +1,51 @@
+# prek / pre-commit configuration
+# Install: prek install
+# Run all: prek run --all-files
+# https://prek.j178.dev/
+
+repos:
+  # ── Go ────────────────────────────────────────────────────────────────
+  - repo: https://github.com/TekWizely/pre-commit-golang
+    rev: v1.0.0-rc.4
+    hooks:
+      - id: go-fmt
+      - id: go-vet-mod
+      - id: go-build-mod
+
+  # ── Python (ruff) ────────────────────────────────────────────────────
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.2
+    hooks:
+      - id: ruff-check
+        args: [--fix]
+        files: ^sdks/python/
+      - id: ruff-format
+        files: ^sdks/python/
+
+  # ── TypeScript (oxlint) ──────────────────────────────────────────────
+  - repo: https://github.com/oxc-project/mirrors-oxlint
+    rev: v1.50.0
+    hooks:
+      - id: oxlint
+        files: ^sdks/typescript/
+
+  # ── TypeScript (oxfmt) ──────────────────────────────────────────────
+  - repo: local
+    hooks:
+      - id: oxfmt
+        name: oxfmt
+        entry: npx oxfmt --check
+        language: node
+        types_or: [javascript, jsx, ts, tsx]
+        files: ^sdks/typescript/
+        additional_dependencies: ["oxfmt@0.7.0"]
+
+  # ── General ──────────────────────────────────────────────────────────
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+      - id: check-merge-conflict

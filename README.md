@@ -97,6 +97,16 @@ make build    # Build binary to dist/ancla
 make test     # Run tests
 make vet      # Run go vet
 make fmt      # Format code
+make lint     # Run all linting checks
+```
+
+### Pre-commit hooks
+
+This project uses [prek](https://prek.j178.dev/) for pre-commit hooks.
+
+```bash
+prek install          # Set up git hooks
+prek run --all-files  # Run all checks manually
 ```
 
 ## License
