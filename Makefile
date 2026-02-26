@@ -4,7 +4,8 @@ LDFLAGS  = -s -w \
            -X github.com/SideQuest-Group/ancla-client/internal/cli.Version=$(VERSION) \
            -X github.com/SideQuest-Group/ancla-client/internal/cli.Commit=$(COMMIT)
 
-.PHONY: build install test vet fmt fmt-check lint clean sync-openapi docs docs-dev docs-serve docs-gen
+.PHONY: build install test vet fmt fmt-check lint clean openapi docs docs-dev docs-serve docs-gen \
+       spec-enrich sdk-go sdk-python sdk-typescript sdks openapi-full
 
 build: ## Build the ancla binary
 	go build -ldflags '$(LDFLAGS)' -o dist/ancla ./cmd/ancla
@@ -29,9 +30,36 @@ lint: vet fmt-check ## Run all linting checks
 clean: ## Remove build artifacts
 	rm -rf dist/
 
-sync-openapi: ## Copy openapi.json from the private ancla repo (set ANCLA_REPO)
-	@if [ -z "$(ANCLA_REPO)" ]; then echo "Set ANCLA_REPO to the path of the ancla repo"; exit 1; fi
-	cp "$(ANCLA_REPO)/openapi.json" openapi.json
+ANCLA_REPO ?= ../ancla
+OPENAPI_GEN_IMAGE ?= openapitools/openapi-generator-cli:v7.12.0
+ENRICHED_SPEC     ?= openapi.enriched.json
+
+openapi: ## Generate and pull openapi.json from the ancla backend repo
+	$(MAKE) -C $(ANCLA_REPO) openapi
+	cp $(ANCLA_REPO)/openapi.json openapi.json
+	@echo "Updated openapi.json from $(ANCLA_REPO)"
+
+spec-enrich: ## Enrich openapi.json with typed schemas and clean operationIds
+	python3 scripts/enrich-openapi.py --spec openapi.json --out $(ENRICHED_SPEC)
+
+sdk-go: spec-enrich ## Generate Go SDK from enriched spec
+	cp codegen/openapi-generator-ignore-go sdks/go/.openapi-generator-ignore
+	docker run --rm -v $(CURDIR):/work -w /work $(OPENAPI_GEN_IMAGE) generate -c codegen/go.yaml
+	cd sdks/go && go mod tidy
+
+sdk-python: spec-enrich ## Generate Python SDK from enriched spec
+	cp codegen/openapi-generator-ignore-python sdks/python/.openapi-generator-ignore
+	docker run --rm -v $(CURDIR):/work -w /work $(OPENAPI_GEN_IMAGE) generate -c codegen/python.yaml
+	cd sdks/python && uv sync
+
+sdk-typescript: spec-enrich ## Generate TypeScript SDK from enriched spec
+	cp codegen/openapi-generator-ignore-ts sdks/typescript/.openapi-generator-ignore
+	docker run --rm -v $(CURDIR):/work -w /work $(OPENAPI_GEN_IMAGE) generate -c codegen/typescript.yaml
+	cd sdks/typescript && bun install
+
+sdks: sdk-go sdk-python sdk-typescript ## Generate all SDKs
+
+openapi-full: openapi sdks ## Pull fresh spec from backend and regenerate all SDKs
 
 docs-gen: ## Generate CLI + API reference docs
 	go run ./cmd/gen-docs --out docs/src/content/docs/cli

@@ -1,0 +1,17 @@
+# Protect project configuration
+pyproject.toml
+uv.lock
+setup.py
+setup.cfg
+# Protect hand-written tests
+tests/**
+# Protect docs
+docs/**
+# Protect git and CI files
+.gitignore
+.github/**
+.travis.yml
+git_push.sh
+tox.ini
+test-requirements.txt
+requirements.txt

@@ -1,0 +1,8 @@
+generatorName: python
+inputSpec: openapi.enriched.json
+outputDir: sdks/python
+additionalProperties:
+  packageName: ancla
+  projectName: ancla
+  generateSourceCodeOnly: "true"
+  library: urllib3

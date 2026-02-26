@@ -1,0 +1,8 @@
+generatorName: typescript-fetch
+inputSpec: openapi.enriched.json
+outputDir: sdks/typescript
+additionalProperties:
+  npmName: "@ancla/sdk"
+  supportsES6: "true"
+  typescriptThreePlus: "true"
+  withInterfaces: "true"

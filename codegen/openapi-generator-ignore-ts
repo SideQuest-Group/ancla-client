@@ -1,0 +1,13 @@
+# Protect project configuration
+package.json
+tsconfig.json
+bun.lock
+# Protect hand-written tests
+tests/**
+# Protect docs
+docs/**
+# Protect git and CI files
+.gitignore
+.github/**
+git_push.sh
+.npmignore

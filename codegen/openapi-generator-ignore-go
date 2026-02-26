@@ -1,0 +1,10 @@
+# Protect hand-written test files
+*_test.go
+go.sum
+# Protect docs
+docs/**
+# Protect git and CI files
+.gitignore
+.github/**
+.travis.yml
+git_push.sh

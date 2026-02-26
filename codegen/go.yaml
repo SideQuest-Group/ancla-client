@@ -1,0 +1,10 @@
+generatorName: go
+inputSpec: openapi.enriched.json
+outputDir: sdks/go
+additionalProperties:
+  packageName: ancla
+  moduleName: github.com/sidequest-labs/ancla-go
+  generateInterfaces: "true"
+  withGoMod: "true"
+  isGoSubmodule: "false"
+  enumClassPrefix: "true"

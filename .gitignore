@@ -11,6 +11,9 @@ dist/
 *.out
 .DS_Store
 
+# Generated enriched spec (rebuilt via make spec-enrich)
+openapi.enriched.json
+
 # Generated docs (rebuilt via make docs-gen)
 docs/src/content/docs/cli/**/*.md
 docs/src/content/docs/cli/*.md
