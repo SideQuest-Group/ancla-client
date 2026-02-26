@@ -20,13 +20,13 @@ type ProjectDataSource struct {
 
 // ProjectDataSourceModel maps the data source schema data.
 type ProjectDataSourceModel struct {
-	ID               types.String `tfsdk:"id"`
-	Name             types.String `tfsdk:"name"`
-	Slug             types.String `tfsdk:"slug"`
-	OrganizationSlug types.String `tfsdk:"organization_slug"`
-	ApplicationCount types.Int64  `tfsdk:"application_count"`
-	Created          types.String `tfsdk:"created"`
-	Updated          types.String `tfsdk:"updated"`
+	ID            types.String `tfsdk:"id"`
+	Name          types.String `tfsdk:"name"`
+	Slug          types.String `tfsdk:"slug"`
+	WorkspaceSlug types.String `tfsdk:"workspace_slug"`
+	ServiceCount  types.Int64  `tfsdk:"service_count"`
+	Created       types.String `tfsdk:"created"`
+	Updated       types.String `tfsdk:"updated"`
 }
 
 func NewProjectDataSource() datasource.DataSource {
@@ -39,7 +39,7 @@ func (d *ProjectDataSource) Metadata(_ context.Context, req datasource.MetadataR
 
 func (d *ProjectDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Reads an Ancla project by organization slug and project slug.",
+		Description: "Reads an Ancla project by workspace slug and project slug.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Description: "The unique identifier of the project.",
@@ -53,12 +53,12 @@ func (d *ProjectDataSource) Schema(_ context.Context, _ datasource.SchemaRequest
 				Description: "The URL-friendly slug of the project.",
 				Required:    true,
 			},
-			"organization_slug": schema.StringAttribute{
-				Description: "The slug of the organization this project belongs to.",
+			"workspace_slug": schema.StringAttribute{
+				Description: "The slug of the workspace this project belongs to.",
 				Required:    true,
 			},
-			"application_count": schema.Int64Attribute{
-				Description: "The number of applications in the project.",
+			"service_count": schema.Int64Attribute{
+				Description: "The number of services in the project.",
 				Computed:    true,
 			},
 			"created": schema.StringAttribute{
@@ -94,7 +94,7 @@ func (d *ProjectDataSource) Read(ctx context.Context, req datasource.ReadRequest
 		return
 	}
 
-	project, err := d.client.GetProject(config.OrganizationSlug.ValueString(), config.Slug.ValueString())
+	project, err := d.client.GetProject(config.WorkspaceSlug.ValueString(), config.Slug.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError("Error reading project", err.Error())
 		return
@@ -103,8 +103,8 @@ func (d *ProjectDataSource) Read(ctx context.Context, req datasource.ReadRequest
 	config.ID = types.StringValue(project.ID)
 	config.Name = types.StringValue(project.Name)
 	config.Slug = types.StringValue(project.Slug)
-	config.OrganizationSlug = types.StringValue(project.OrganizationSlug)
-	config.ApplicationCount = types.Int64Value(int64(project.ApplicationCount))
+	config.WorkspaceSlug = types.StringValue(project.WorkspaceSlug)
+	config.ServiceCount = types.Int64Value(int64(project.ServiceCount))
 	config.Created = types.StringValue(project.Created)
 	config.Updated = types.StringValue(project.Updated)
 

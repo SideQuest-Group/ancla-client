@@ -4,54 +4,71 @@ from __future__ import annotations
 
 from pydantic import BaseModel, Field
 
-
 # ---------------------------------------------------------------------------
-# Organizations
+# Workspaces
 # ---------------------------------------------------------------------------
 
-class OrgMember(BaseModel):
-    """A member of an organization."""
+
+class WorkspaceMember(BaseModel):
+    """A member of a workspace."""
 
     username: str
     email: str
     admin: bool = False
 
 
-class Org(BaseModel):
-    """An Ancla organization."""
+class Workspace(BaseModel):
+    """An Ancla workspace (formerly organization)."""
 
     id: str = ""
     name: str
     slug: str
     member_count: int = 0
     project_count: int = 0
-    application_count: int = 0
-    members: list[OrgMember] = Field(default_factory=list)
+    service_count: int = 0
+    members: list[WorkspaceMember] = Field(default_factory=list)
 
 
 # ---------------------------------------------------------------------------
 # Projects
 # ---------------------------------------------------------------------------
 
+
 class Project(BaseModel):
-    """A project within an organization."""
+    """A project within a workspace."""
 
     id: str = ""
     name: str
     slug: str
-    organization_slug: str = ""
-    organization_name: str = ""
-    application_count: int = 0
+    workspace_slug: str = ""
+    workspace_name: str = ""
+    service_count: int = 0
     created: str = ""
     updated: str = ""
 
 
 # ---------------------------------------------------------------------------
-# Applications
+# Environments
 # ---------------------------------------------------------------------------
 
-class App(BaseModel):
-    """An application within a project."""
+
+class Environment(BaseModel):
+    """An environment within a project (e.g. production, staging)."""
+
+    id: str = ""
+    name: str
+    slug: str
+    service_count: int = 0
+    created: str = ""
+
+
+# ---------------------------------------------------------------------------
+# Services
+# ---------------------------------------------------------------------------
+
+
+class Service(BaseModel):
+    """A service within an environment (formerly application)."""
 
     id: str = ""
     name: str
@@ -63,25 +80,12 @@ class App(BaseModel):
 
 
 # ---------------------------------------------------------------------------
-# Configuration
+# Builds
 # ---------------------------------------------------------------------------
 
-class ConfigVar(BaseModel):
-    """A configuration variable attached to an application."""
 
-    id: str = ""
-    name: str
-    value: str = ""
-    secret: bool = False
-    buildtime: bool = False
-
-
-# ---------------------------------------------------------------------------
-# Images
-# ---------------------------------------------------------------------------
-
-class Image(BaseModel):
-    """A container image built for an application."""
+class Build(BaseModel):
+    """A container build for a service (formerly image)."""
 
     id: str = ""
     version: int = 0
@@ -90,39 +94,19 @@ class Image(BaseModel):
     created: str = ""
 
 
-class ImageList(BaseModel):
-    """Paginated wrapper returned by the images list endpoint."""
+class BuildList(BaseModel):
+    """Paginated wrapper returned by the builds list endpoint."""
 
-    items: list[Image] = Field(default_factory=list)
-
-
-# ---------------------------------------------------------------------------
-# Releases
-# ---------------------------------------------------------------------------
-
-class Release(BaseModel):
-    """A release combining an image and configuration."""
-
-    id: str = ""
-    version: int = 0
-    platform: str = ""
-    built: bool = False
-    error: bool = False
-    created: str = ""
-
-
-class ReleaseList(BaseModel):
-    """Paginated wrapper returned by the releases list endpoint."""
-
-    items: list[Release] = Field(default_factory=list)
+    items: list[Build] = Field(default_factory=list)
 
 
 # ---------------------------------------------------------------------------
-# Deployments
+# Deploys
 # ---------------------------------------------------------------------------
 
-class Deployment(BaseModel):
-    """A deployment of a release to infrastructure."""
+
+class Deploy(BaseModel):
+    """A deploy combining build and rollout (formerly release + deployment)."""
 
     id: str = ""
     complete: bool = False
@@ -133,28 +117,69 @@ class Deployment(BaseModel):
     updated: str = ""
 
 
+class DeployLog(BaseModel):
+    """Log output for a deploy."""
+
+    status: str = ""
+    log_text: str = ""
+
+
+class DeployList(BaseModel):
+    """Paginated wrapper returned by the deploys list endpoint."""
+
+    items: list[Deploy] = Field(default_factory=list)
+
+
+# ---------------------------------------------------------------------------
+# Configuration
+# ---------------------------------------------------------------------------
+
+
+class ConfigVar(BaseModel):
+    """A configuration variable attached to a service."""
+
+    id: str = ""
+    name: str
+    value: str = ""
+    secret: bool = False
+    buildtime: bool = False
+
+
+# ---------------------------------------------------------------------------
+# Pipeline status
+# ---------------------------------------------------------------------------
+
+
+class StageStatus(BaseModel):
+    """Status of a single pipeline stage."""
+
+    status: str = ""
+
+
+class PipelineStatus(BaseModel):
+    """Status of the build/deploy pipeline (no release stage)."""
+
+    build: StageStatus | None = None
+    deploy: StageStatus | None = None
+
+
 # ---------------------------------------------------------------------------
 # Action responses
 # ---------------------------------------------------------------------------
 
+
 class DeployResult(BaseModel):
     """Response from triggering a deploy."""
 
-    image_id: str = ""
+    build_id: str = ""
 
 
 class ScaleResult(BaseModel):
     """Response from a scale operation (empty on success)."""
 
 
-class CreateReleaseResult(BaseModel):
-    """Response from creating a release."""
+class BuildResult(BaseModel):
+    """Response from creating a build."""
 
-    release_id: str = ""
+    build_id: str = ""
     version: int = 0
-
-
-class DeployReleaseResult(BaseModel):
-    """Response from deploying a release."""
-
-    deployment_id: str = ""

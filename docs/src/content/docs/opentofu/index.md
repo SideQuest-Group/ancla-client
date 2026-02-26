@@ -3,7 +3,7 @@ title: Terraform / OpenTofu Provider
 description: Manage Ancla resources with infrastructure-as-code.
 ---
 
-The `sidequest-labs/ancla` provider lets you manage Ancla orgs, projects, apps, and config variables as Terraform or OpenTofu resources.
+The `sidequest-labs/ancla` provider lets you manage Ancla workspaces, projects, environments, services, and config variables as Terraform or OpenTofu resources.
 
 ## Install
 
@@ -38,48 +38,75 @@ Both attributes can be set via environment variables instead. `ANCLA_API_KEY` is
 
 ## Resources
 
-### ancla_org
+### ancla_workspace
 
 ```hcl
-resource "ancla_org" "main" {
-  name = "My Organization"
+resource "ancla_workspace" "main" {
+  name = "My Workspace"
 }
 ```
 
 | Attribute | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `name` | string | yes | Organization display name |
+| `name` | string | yes | Workspace display name |
 
 **Read-only:** `id`, `slug`
 
-Supports `terraform import ancla_org.main <slug>`.
+Supports `terraform import ancla_workspace.main <slug>`.
 
 ### ancla_project
 
 ```hcl
 resource "ancla_project" "web" {
-  name              = "Web Platform"
-  organization_slug = ancla_org.main.slug
+  name           = "Web Platform"
+  workspace_slug = ancla_workspace.main.slug
 }
 ```
 
 | Attribute | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `name` | string | yes | Project name |
-| `organization_slug` | string | yes | Slug of the parent organization |
+| `workspace_slug` | string | yes | Slug of the parent workspace |
 
 **Read-only:** `id`, `slug`
 
-Supports `terraform import ancla_project.web <org-slug>/<project-slug>`.
+Supports `terraform import ancla_project.web <workspace-slug>/<project-slug>`.
 
-### ancla_app
+### ancla_environment
 
 ```hcl
-resource "ancla_app" "api" {
-  name              = "API Service"
-  organization_slug = ancla_org.main.slug
-  project_slug      = ancla_project.web.slug
-  platform          = "docker"
+resource "ancla_environment" "production" {
+  name           = "production"
+  workspace_slug = ancla_workspace.main.slug
+  project_slug   = ancla_project.web.slug
+}
+
+resource "ancla_environment" "staging" {
+  name           = "staging"
+  workspace_slug = ancla_workspace.main.slug
+  project_slug   = ancla_project.web.slug
+}
+```
+
+| Attribute | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `name` | string | yes | Environment name (e.g. production, staging) |
+| `workspace_slug` | string | yes | Parent workspace slug |
+| `project_slug` | string | yes | Parent project slug |
+
+**Read-only:** `id`, `slug`
+
+Supports `terraform import ancla_environment.production <workspace-slug>/<project-slug>/<env-slug>`.
+
+### ancla_service
+
+```hcl
+resource "ancla_service" "api" {
+  name           = "API Service"
+  workspace_slug = ancla_workspace.main.slug
+  project_slug   = ancla_project.web.slug
+  env_slug       = ancla_environment.production.slug
+  platform       = "docker"
 
   github_repository  = "sidequest-labs/api-service"
   auto_deploy_branch = "main"
@@ -93,9 +120,10 @@ resource "ancla_app" "api" {
 
 | Attribute | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `name` | string | yes | App name |
-| `organization_slug` | string | yes | Parent org slug |
+| `name` | string | yes | Service name |
+| `workspace_slug` | string | yes | Parent workspace slug |
 | `project_slug` | string | yes | Parent project slug |
+| `env_slug` | string | yes | Parent environment slug |
 | `platform` | string | yes | Platform type (e.g. `docker`) |
 | `github_repository` | string | no | GitHub repo (owner/name) |
 | `auto_deploy_branch` | string | no | Branch that triggers auto-deploy |
@@ -103,47 +131,48 @@ resource "ancla_app" "api" {
 
 **Read-only:** `id`, `slug`
 
-Supports `terraform import ancla_app.api <org-slug>/<project-slug>/<app-slug>`.
+Supports `terraform import ancla_service.api <workspace-slug>/<project-slug>/<env-slug>/<service-slug>`.
 
-### ancla_config
+### ancla_config_var
 
 ```hcl
-resource "ancla_config" "database_url" {
-  app_id = ancla_app.api.id
-  name   = "DATABASE_URL"
-  value  = "postgres://localhost:5432/mydb"
+resource "ancla_config_var" "database_url" {
+  service_id = ancla_service.api.id
+  name       = "DATABASE_URL"
+  value      = "postgres://localhost:5432/mydb"
 }
 
-resource "ancla_config" "secret_key" {
-  app_id    = ancla_app.api.id
-  name      = "SECRET_KEY"
-  value     = "super-secret-value"
-  secret    = true
-  buildtime = false
+resource "ancla_config_var" "secret_key" {
+  service_id = ancla_service.api.id
+  name       = "SECRET_KEY"
+  value      = "super-secret-value"
+  secret     = true
+  buildtime  = false
 }
 ```
 
 | Attribute | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `app_id` | string | yes | ID of the parent application |
+| `service_id` | string | yes | ID of the parent service |
 | `name` | string | yes | Variable name |
 | `value` | string | yes | Variable value |
 | `secret` | bool | no | Mark as secret (hidden in UI/API) |
 | `buildtime` | bool | no | Available at build time |
+| `scope` | string | no | Scope level: `workspace`, `project`, `env`, or `service` (default) |
 
 **Read-only:** `id`
 
-Supports `terraform import ancla_config.database_url <config-id>`.
+Supports `terraform import ancla_config_var.database_url <config-id>`.
 
 ## Data sources
 
-### data.ancla_org
+### data.ancla_workspace
 
-Look up an existing organization by slug:
+Look up an existing workspace by slug:
 
 ```hcl
-data "ancla_org" "existing" {
-  slug = "my-org"
+data "ancla_workspace" "existing" {
+  slug = "my-ws"
 }
 ```
 
@@ -153,20 +182,33 @@ Returns `name`, `slug`, `member_count`, `project_count`.
 
 ```hcl
 data "ancla_project" "existing" {
-  organization_slug = "my-org"
-  slug              = "my-project"
+  workspace_slug = "my-ws"
+  slug           = "my-project"
 }
 ```
 
-Returns `name`, `slug`, `organization_slug`, `application_count`.
+Returns `name`, `slug`, `workspace_slug`, `environment_count`.
 
-### data.ancla_app
+### data.ancla_environment
 
 ```hcl
-data "ancla_app" "existing" {
-  organization_slug = "my-org"
-  project_slug      = "my-project"
-  slug              = "my-app"
+data "ancla_environment" "existing" {
+  workspace_slug = "my-ws"
+  project_slug   = "my-project"
+  slug           = "production"
+}
+```
+
+Returns `name`, `slug`, `workspace_slug`, `project_slug`, `service_count`.
+
+### data.ancla_service
+
+```hcl
+data "ancla_service" "existing" {
+  workspace_slug = "my-ws"
+  project_slug   = "my-project"
+  env_slug       = "production"
+  slug           = "my-service"
 }
 ```
 
@@ -185,21 +227,34 @@ terraform {
 
 provider "ancla" {}
 
-resource "ancla_org" "acme" {
+resource "ancla_workspace" "acme" {
   name = "Acme Corp"
 }
 
 resource "ancla_project" "backend" {
-  name              = "Backend Services"
-  organization_slug = ancla_org.acme.slug
+  name           = "Backend Services"
+  workspace_slug = ancla_workspace.acme.slug
 }
 
-resource "ancla_app" "api" {
-  name              = "REST API"
-  organization_slug = ancla_org.acme.slug
-  project_slug      = ancla_project.backend.slug
-  platform          = "docker"
-  github_repository = "acme/rest-api"
+resource "ancla_environment" "production" {
+  name           = "production"
+  workspace_slug = ancla_workspace.acme.slug
+  project_slug   = ancla_project.backend.slug
+}
+
+resource "ancla_environment" "staging" {
+  name           = "staging"
+  workspace_slug = ancla_workspace.acme.slug
+  project_slug   = ancla_project.backend.slug
+}
+
+resource "ancla_service" "api" {
+  name           = "REST API"
+  workspace_slug = ancla_workspace.acme.slug
+  project_slug   = ancla_project.backend.slug
+  env_slug       = ancla_environment.production.slug
+  platform       = "docker"
+  github_repository  = "acme/rest-api"
   auto_deploy_branch = "main"
 
   process_counts = {
@@ -207,14 +262,14 @@ resource "ancla_app" "api" {
   }
 }
 
-resource "ancla_config" "db" {
-  app_id = ancla_app.api.id
-  name   = "DATABASE_URL"
-  value  = "postgres://db.internal:5432/api"
-  secret = true
+resource "ancla_config_var" "db" {
+  service_id = ancla_service.api.id
+  name       = "DATABASE_URL"
+  value      = "postgres://db.internal:5432/api"
+  secret     = true
 }
 
-output "api_app_id" {
-  value = ancla_app.api.id
+output "api_service_id" {
+  value = ancla_service.api.id
 }
 ```

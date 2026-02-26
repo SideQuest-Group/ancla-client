@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import os
 
 import pytest
 from pytest_httpx import HTTPXMock
@@ -12,11 +11,13 @@ from ancla import (
     AnclaClient,
     AnclaError,
     AuthenticationError,
+    Build,
+    Deploy,
     NotFoundError,
-    Org,
     ServerError,
+    Service,
+    Workspace,
 )
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -69,153 +70,122 @@ class TestClientInit:
 
 
 # ---------------------------------------------------------------------------
-# Organizations CRUD
+# Workspaces
 # ---------------------------------------------------------------------------
 
 
-class TestOrgs:
-    """Cover list, get, create, update, delete for organizations."""
+class TestWorkspaces:
+    """Cover list, get, create for workspaces."""
 
-    def test_list_orgs(self, client: AnclaClient, httpx_mock: HTTPXMock) -> None:
+    def test_list_workspaces(self, client: AnclaClient, httpx_mock: HTTPXMock) -> None:
         payload = [
             {
-                "id": "org-1",
+                "id": "ws-1",
                 "name": "Acme",
                 "slug": "acme",
                 "member_count": 3,
                 "project_count": 2,
+                "service_count": 5,
             },
         ]
         httpx_mock.add_response(
-            url=f"{SERVER}/api/v1/organizations/",
+            url=f"{SERVER}/api/v1/workspaces/",
             method="GET",
             json=payload,
         )
 
-        orgs = client.list_orgs()
-        assert len(orgs) == 1
-        assert isinstance(orgs[0], Org)
-        assert orgs[0].slug == "acme"
-        assert orgs[0].member_count == 3
+        workspaces = client.list_workspaces()
+        assert len(workspaces) == 1
+        assert isinstance(workspaces[0], Workspace)
+        assert workspaces[0].slug == "acme"
+        assert workspaces[0].member_count == 3
+        assert workspaces[0].service_count == 5
 
-    def test_get_org(self, client: AnclaClient, httpx_mock: HTTPXMock) -> None:
+    def test_get_workspace(self, client: AnclaClient, httpx_mock: HTTPXMock) -> None:
         payload = {
-            "id": "org-1",
+            "id": "ws-1",
             "name": "Acme",
             "slug": "acme",
             "project_count": 2,
-            "application_count": 5,
+            "service_count": 5,
             "members": [
                 {"username": "alice", "email": "alice@example.com", "admin": True},
             ],
         }
         httpx_mock.add_response(
-            url=f"{SERVER}/api/v1/organizations/acme",
+            url=f"{SERVER}/api/v1/workspaces/acme",
             method="GET",
             json=payload,
         )
 
-        org = client.get_org("acme")
-        assert org.name == "Acme"
-        assert len(org.members) == 1
-        assert org.members[0].admin is True
+        ws = client.get_workspace("acme")
+        assert ws.name == "Acme"
+        assert len(ws.members) == 1
+        assert ws.members[0].admin is True
 
-    def test_create_org(self, client: AnclaClient, httpx_mock: HTTPXMock) -> None:
-        payload = {"id": "org-new", "name": "NewOrg", "slug": "neworg"}
+    def test_create_workspace(self, client: AnclaClient, httpx_mock: HTTPXMock) -> None:
+        payload = {"id": "ws-new", "name": "NewWS", "slug": "newws"}
         httpx_mock.add_response(
-            url=f"{SERVER}/api/v1/organizations/",
+            url=f"{SERVER}/api/v1/workspaces/",
             method="POST",
             json=payload,
         )
 
-        org = client.create_org("NewOrg")
-        assert org.slug == "neworg"
+        ws = client.create_workspace("NewWS")
+        assert ws.slug == "newws"
 
-        # Verify request body
         request = httpx_mock.get_requests()[0]
         body = json.loads(request.content)
-        assert body == {"name": "NewOrg"}
-
-    def test_update_org(self, client: AnclaClient, httpx_mock: HTTPXMock) -> None:
-        payload = {"id": "org-1", "name": "Renamed", "slug": "acme"}
-        httpx_mock.add_response(
-            url=f"{SERVER}/api/v1/organizations/acme",
-            method="PATCH",
-            json=payload,
-        )
-
-        org = client.update_org("acme", "Renamed")
-        assert org.name == "Renamed"
-
-    def test_delete_org(self, client: AnclaClient, httpx_mock: HTTPXMock) -> None:
-        httpx_mock.add_response(
-            url=f"{SERVER}/api/v1/organizations/acme",
-            method="DELETE",
-            status_code=204,
-        )
-
-        # Should not raise
-        client.delete_org("acme")
+        assert body == {"name": "NewWS"}
 
 
 # ---------------------------------------------------------------------------
-# Applications
+# Services
 # ---------------------------------------------------------------------------
 
 
-class TestApps:
-    """Spot-check application endpoints."""
+class TestServices:
+    """Spot-check service endpoints."""
 
-    def test_list_apps(self, client: AnclaClient, httpx_mock: HTTPXMock) -> None:
+    def test_list_services(self, client: AnclaClient, httpx_mock: HTTPXMock) -> None:
         payload = [
-            {"name": "My App", "slug": "my-app", "platform": "docker"},
+            {"name": "Web API", "slug": "web-api", "platform": "docker"},
         ]
         httpx_mock.add_response(
-            url=f"{SERVER}/api/v1/applications/acme/web",
+            url=f"{SERVER}/api/v1/workspaces/acme/projects/web/envs/production/services/",
             method="GET",
             json=payload,
         )
 
-        apps = client.list_apps("acme", "web")
-        assert len(apps) == 1
-        assert apps[0].platform == "docker"
+        services = client.list_services("acme", "web", "production")
+        assert len(services) == 1
+        assert isinstance(services[0], Service)
+        assert services[0].platform == "docker"
 
-    def test_deploy_app(self, client: AnclaClient, httpx_mock: HTTPXMock) -> None:
+    def test_deploy_service(self, client: AnclaClient, httpx_mock: HTTPXMock) -> None:
         httpx_mock.add_response(
-            url=f"{SERVER}/api/v1/applications/acme/web/my-app/deploy",
+            url=f"{SERVER}/api/v1/workspaces/acme/projects/web/envs/production/services/web-api/deploy",
             method="POST",
-            json={"image_id": "img-123"},
+            json={"build_id": "bld-123"},
         )
 
-        result = client.deploy_app("acme", "web", "my-app")
-        assert result.image_id == "img-123"
-
-    def test_scale_app(self, client: AnclaClient, httpx_mock: HTTPXMock) -> None:
-        httpx_mock.add_response(
-            url=f"{SERVER}/api/v1/applications/acme/web/my-app/scale",
-            method="POST",
-            status_code=200,
-            json={},
-        )
-
-        client.scale_app("acme", "web", "my-app", {"web": 2, "worker": 1})
-
-        request = httpx_mock.get_requests()[0]
-        body = json.loads(request.content)
-        assert body == {"process_counts": {"web": 2, "worker": 1}}
+        result = client.deploy_service("acme", "web", "production", "web-api")
+        assert result.build_id == "bld-123"
 
 
 # ---------------------------------------------------------------------------
-# Images & Releases (list returns {items: [...]})
+# Builds
 # ---------------------------------------------------------------------------
 
 
-class TestImages:
-    def test_list_images(self, client: AnclaClient, httpx_mock: HTTPXMock) -> None:
+class TestBuilds:
+    """Spot-check build endpoints."""
+
+    def test_list_builds(self, client: AnclaClient, httpx_mock: HTTPXMock) -> None:
         payload = {
             "items": [
                 {
-                    "id": "img-1",
+                    "id": "bld-1",
                     "version": 1,
                     "built": True,
                     "error": False,
@@ -224,27 +194,45 @@ class TestImages:
             ],
         }
         httpx_mock.add_response(
-            url=f"{SERVER}/api/v1/images/acme/web/my-app",
+            url=f"{SERVER}/api/v1/workspaces/acme/projects/web/envs/production/services/web-api/builds/",
             method="GET",
             json=payload,
         )
 
-        images = client.list_images("acme", "web", "my-app")
-        assert len(images) == 1
-        assert images[0].built is True
+        builds = client.list_builds("acme", "web", "production", "web-api")
+        assert len(builds) == 1
+        assert isinstance(builds[0], Build)
+        assert builds[0].built is True
 
 
-class TestReleases:
-    def test_create_release(self, client: AnclaClient, httpx_mock: HTTPXMock) -> None:
+# ---------------------------------------------------------------------------
+# Deploys
+# ---------------------------------------------------------------------------
+
+
+class TestDeploys:
+    """Spot-check deploy endpoints."""
+
+    def test_get_deploy(self, client: AnclaClient, httpx_mock: HTTPXMock) -> None:
+        payload = {
+            "id": "dpl-1",
+            "complete": True,
+            "error": False,
+            "error_detail": "",
+            "job_id": "job-abc",
+            "created": "2025-01-01",
+            "updated": "2025-01-01",
+        }
         httpx_mock.add_response(
-            url=f"{SERVER}/api/v1/releases/acme/web/my-app/create",
-            method="POST",
-            json={"release_id": "rel-1", "version": 3},
+            url=f"{SERVER}/api/v1/deploys/dpl-1/detail",
+            method="GET",
+            json=payload,
         )
 
-        result = client.create_release("acme", "web", "my-app", "img-1")
-        assert result.release_id == "rel-1"
-        assert result.version == 3
+        deploy = client.get_deploy("dpl-1")
+        assert isinstance(deploy, Deploy)
+        assert deploy.complete is True
+        assert deploy.job_id == "job-abc"
 
 
 # ---------------------------------------------------------------------------
@@ -255,77 +243,65 @@ class TestReleases:
 class TestErrors:
     """Verify HTTP error codes map to the correct exception types."""
 
-    def test_401_raises_authentication_error(
-        self, client: AnclaClient, httpx_mock: HTTPXMock
-    ) -> None:
+    def test_401_raises_authentication_error(self, client: AnclaClient, httpx_mock: HTTPXMock) -> None:
         httpx_mock.add_response(
-            url=f"{SERVER}/api/v1/organizations/",
+            url=f"{SERVER}/api/v1/workspaces/",
             status_code=401,
             json={"message": "Invalid API key"},
         )
 
         with pytest.raises(AuthenticationError, match="Invalid API key"):
-            client.list_orgs()
+            client.list_workspaces()
 
-    def test_404_raises_not_found_error(
-        self, client: AnclaClient, httpx_mock: HTTPXMock
-    ) -> None:
+    def test_404_raises_not_found_error(self, client: AnclaClient, httpx_mock: HTTPXMock) -> None:
         httpx_mock.add_response(
-            url=f"{SERVER}/api/v1/organizations/missing",
+            url=f"{SERVER}/api/v1/workspaces/missing",
             status_code=404,
-            json={"detail": "Organization not found"},
+            json={"detail": "Workspace not found"},
         )
 
-        with pytest.raises(NotFoundError, match="Organization not found"):
-            client.get_org("missing")
+        with pytest.raises(NotFoundError, match="Workspace not found"):
+            client.get_workspace("missing")
 
-    def test_500_raises_server_error(
-        self, client: AnclaClient, httpx_mock: HTTPXMock
-    ) -> None:
+    def test_500_raises_server_error(self, client: AnclaClient, httpx_mock: HTTPXMock) -> None:
         httpx_mock.add_response(
-            url=f"{SERVER}/api/v1/organizations/",
+            url=f"{SERVER}/api/v1/workspaces/",
             status_code=500,
             text="Internal Server Error",
         )
 
         with pytest.raises(ServerError):
-            client.list_orgs()
+            client.list_workspaces()
 
-    def test_422_raises_validation_error(
-        self, client: AnclaClient, httpx_mock: HTTPXMock
-    ) -> None:
+    def test_422_raises_validation_error(self, client: AnclaClient, httpx_mock: HTTPXMock) -> None:
         from ancla import ValidationError as AnclaValidationError
 
         httpx_mock.add_response(
-            url=f"{SERVER}/api/v1/organizations/",
+            url=f"{SERVER}/api/v1/workspaces/",
             method="POST",
             status_code=422,
             json={"detail": "Name is required"},
         )
 
         with pytest.raises(AnclaValidationError, match="Name is required"):
-            client.create_org("")
+            client.create_workspace("")
 
-    def test_generic_4xx_raises_ancla_error(
-        self, client: AnclaClient, httpx_mock: HTTPXMock
-    ) -> None:
+    def test_generic_4xx_raises_ancla_error(self, client: AnclaClient, httpx_mock: HTTPXMock) -> None:
         httpx_mock.add_response(
-            url=f"{SERVER}/api/v1/organizations/",
+            url=f"{SERVER}/api/v1/workspaces/",
             status_code=429,
             json={"message": "Rate limited"},
         )
 
         with pytest.raises(AnclaError, match="Rate limited"):
-            client.list_orgs()
+            client.list_workspaces()
 
-    def test_auth_header_sent(
-        self, client: AnclaClient, httpx_mock: HTTPXMock
-    ) -> None:
+    def test_auth_header_sent(self, client: AnclaClient, httpx_mock: HTTPXMock) -> None:
         httpx_mock.add_response(
-            url=f"{SERVER}/api/v1/organizations/",
+            url=f"{SERVER}/api/v1/workspaces/",
             json=[],
         )
 
-        client.list_orgs()
+        client.list_workspaces()
         request = httpx_mock.get_requests()[0]
         assert request.headers["X-API-Key"] == API_KEY

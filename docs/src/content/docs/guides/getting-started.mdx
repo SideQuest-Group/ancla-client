@@ -1,6 +1,6 @@
 ---
 title: Getting Started
-description: Install the Ancla CLI and deploy your first application.
+description: Install the Ancla CLI and deploy your first service.
 ---
 
 import { Tabs, TabItem } from '@astrojs/starlight/components';
@@ -81,41 +81,41 @@ ancla login
 
 This opens your browser for authentication. See the [Authentication guide](/guides/authentication/) for CI and manual options.
 
-### 2. List your organizations
+### 2. List your workspaces
 
 ```bash
-ancla orgs list
+ancla workspaces list
 ```
 
 ### 3. List projects
 
 ```bash
-ancla projects list --org my-org
+ancla projects list --workspace my-ws
 ```
 
-### 4. Deploy an application
+### 4. Deploy a service
 
 ```bash
-ancla apps deploy my-org/my-project/my-app
+ancla services deploy my-ws/my-project/production/my-service
 ```
 
-### 5. Check deployment status
+### 5. Check deploy status
 
 ```bash
-ancla apps status my-org/my-project/my-app
+ancla services status my-ws/my-project/production/my-service
 ```
 
 ### 6. Link your project directory
 
 ```bash
-ancla link my-org/my-project/my-app
+ancla link my-ws/my-project/production/my-service
 ```
 
-Now commands like `status`, `logs`, `run`, and `down` know what app you're working on without extra arguments. See [Project Linking](/guides/project-linking/) for details.
+Now commands like `status`, `logs`, `run`, and `down` know what service you're working on without extra arguments. See [Project Linking](/guides/project-linking/) for details.
 
 ## Next steps
 
-- [Project Linking](/guides/project-linking/) — link your directory to skip typing org/project/app on every command
+- [Project Linking](/guides/project-linking/) — link your directory to skip typing workspace/project/env/service on every command
 - [Development Workflow](/guides/dev-workflow/) — deploy, monitor, run locally, scale, and tear down
 - [Remote Access](/guides/remote-access/) — SSH, database shell, cache management
 - [Scripting & Automation](/guides/scripting/) — JSON output, quiet mode, CI/CD patterns

@@ -10,34 +10,42 @@ import (
 )
 
 func init() {
-	rootCmd.AddCommand(imagesCmd)
-	imagesCmd.AddCommand(imagesListCmd)
-	imagesCmd.AddCommand(imagesBuildCmd)
-	imagesCmd.AddCommand(imagesLogCmd)
-	imagesBuildCmd.Flags().BoolP("follow", "f", false, "Follow build progress until complete")
-	imagesLogCmd.Flags().BoolP("follow", "f", false, "Poll for log updates until build completes")
+	rootCmd.AddCommand(buildsCmd)
+	buildsCmd.AddCommand(buildsListCmd)
+	buildsCmd.AddCommand(buildsTriggerCmd)
+	buildsCmd.AddCommand(buildsLogCmd)
+	buildsTriggerCmd.Flags().BoolP("follow", "f", false, "Follow build progress until complete")
+	buildsLogCmd.Flags().BoolP("follow", "f", false, "Poll for log updates until build completes")
 }
 
-var imagesCmd = &cobra.Command{
-	Use:     "images",
-	Aliases: []string{"image", "img"},
-	Short:   "Manage images",
-	Long: `Manage container images for an application.
+var buildsCmd = &cobra.Command{
+	Use:     "builds",
+	Aliases: []string{"build", "b"},
+	Short:   "Manage builds",
+	Long: `Manage builds for a service.
 
-Images are built from your application source code. Each build produces a new
-versioned image that can be used to create a release. Use sub-commands to list
-images, trigger a new build, or view build logs.`,
-	Example: "  ancla images list <app-id>\n  ancla images build <app-id>",
+Builds are created from your service source code. Each build produces a new
+versioned artifact that can be deployed. Use sub-commands to list builds,
+trigger a new build, or view build logs.`,
+	Example: "  ancla builds list my-ws/my-proj/staging/my-svc\n  ancla builds trigger my-ws/my-proj/staging/my-svc",
 	GroupID: "resources",
 }
 
-var imagesListCmd = &cobra.Command{
-	Use:     "list <app-id>",
-	Short:   "List images for an application",
-	Example: "  ancla images list abc12345",
+var buildsListCmd = &cobra.Command{
+	Use:     "list <ws>/<proj>/<env>/<svc>",
+	Short:   "List builds for a service",
+	Example: "  ancla builds list my-ws/my-proj/staging/my-svc",
 	Args:    cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		req, _ := http.NewRequest("GET", apiURL("/images/"+args[0]), nil)
+		ws, proj, env, svc, err := resolveServicePath(args)
+		if err != nil {
+			return err
+		}
+		if proj == "" || env == "" || svc == "" {
+			return fmt.Errorf("usage: builds list <ws>/<proj>/<env>/<svc>")
+		}
+
+		req, _ := http.NewRequest("GET", apiURL(servicePath(ws, proj, env, svc)+"/builds/"), nil)
 		body, err := doRequest(req)
 		if err != nil {
 			return err
@@ -61,32 +69,40 @@ var imagesListCmd = &cobra.Command{
 		}
 
 		var rows [][]string
-		for _, img := range result.Items {
+		for _, b := range result.Items {
 			status := "building"
-			if img.Error {
+			if b.Error {
 				status = "error"
-			} else if img.Built {
+			} else if b.Built {
 				status = "built"
 			}
-			id := img.ID
+			id := b.ID
 			if len(id) > 8 {
 				id = id[:8]
 			}
-			rows = append(rows, []string{fmt.Sprintf("v%d", img.Version), id, colorStatus(status), img.Created})
+			rows = append(rows, []string{fmt.Sprintf("v%d", b.Version), id, colorStatus(status), b.Created})
 		}
 		table([]string{"VERSION", "ID", "STATUS", "CREATED"}, rows)
 		return nil
 	},
 }
 
-var imagesBuildCmd = &cobra.Command{
-	Use:     "build <app-id>",
-	Short:   "Trigger an image build",
-	Example: "  ancla images build abc12345",
+var buildsTriggerCmd = &cobra.Command{
+	Use:     "trigger <ws>/<proj>/<env>/<svc>",
+	Short:   "Trigger a build for a service",
+	Example: "  ancla builds trigger my-ws/my-proj/staging/my-svc",
 	Args:    cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		ws, proj, env, svc, err := resolveServicePath(args)
+		if err != nil {
+			return err
+		}
+		if proj == "" || env == "" || svc == "" {
+			return fmt.Errorf("usage: builds trigger <ws>/<proj>/<env>/<svc>")
+		}
+
 		stop := spin("Triggering build...")
-		req, _ := http.NewRequest("POST", apiURL("/images/"+args[0]+"/build"), nil)
+		req, _ := http.NewRequest("POST", apiURL(servicePath(ws, proj, env, svc)+"/builds/trigger"), nil)
 		body, err := doRequest(req)
 		stop()
 		if err != nil {
@@ -94,30 +110,30 @@ var imagesBuildCmd = &cobra.Command{
 		}
 
 		var result struct {
-			ImageID string `json:"image_id"`
+			BuildID string `json:"build_id"`
 			Version int    `json:"version"`
 		}
 		if err := json.Unmarshal(body, &result); err != nil {
 			fmt.Println("Build likely triggered, but the response could not be parsed (unexpected format).")
 			return nil
 		}
-		fmt.Printf("Build triggered. Image: %s (v%d)\n", result.ImageID, result.Version)
+		fmt.Printf("Build triggered. Build: %s (v%d)\n", result.BuildID, result.Version)
 
 		follow, _ := cmd.Flags().GetBool("follow")
-		if follow && result.ImageID != "" {
-			return followImageBuild(result.ImageID)
+		if follow && result.BuildID != "" {
+			return followBuild(result.BuildID)
 		}
 		return nil
 	},
 }
 
-var imagesLogCmd = &cobra.Command{
-	Use:     "log <image-id>",
-	Short:   "Show build log for an image",
-	Example: "  ancla images log <image-id>",
+var buildsLogCmd = &cobra.Command{
+	Use:     "log <build-id>",
+	Short:   "Show build log",
+	Example: "  ancla builds log <build-id>",
 	Args:    cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		req, _ := http.NewRequest("GET", apiURL("/images/"+args[0]+"/log"), nil)
+		req, _ := http.NewRequest("GET", apiURL("/builds/"+args[0]+"/log"), nil)
 		body, err := doRequest(req)
 		if err != nil {
 			return err
@@ -132,7 +148,7 @@ var imagesLogCmd = &cobra.Command{
 			return fmt.Errorf("parsing response: %w", err)
 		}
 
-		fmt.Printf("Image v%d — %s\n\n", result.Version, result.Status)
+		fmt.Printf("Build v%d — %s\n\n", result.Version, result.Status)
 		if result.LogText != "" {
 			fmt.Println(result.LogText)
 		} else {
@@ -141,21 +157,21 @@ var imagesLogCmd = &cobra.Command{
 
 		follow, _ := cmd.Flags().GetBool("follow")
 		if follow {
-			return followImageBuild(args[0])
+			return followBuild(args[0])
 		}
 		return nil
 	},
 }
 
-// followImageBuild polls the image log endpoint until the build completes or errors.
-func followImageBuild(imageID string) error {
+// followBuild polls the build log endpoint until the build completes or errors.
+func followBuild(buildID string) error {
 	var lastLen int
 	stop := spin("Building...")
 	defer stop()
 
 	for {
 		time.Sleep(3 * time.Second)
-		req, _ := http.NewRequest("GET", apiURL("/images/"+imageID+"/log"), nil)
+		req, _ := http.NewRequest("GET", apiURL("/builds/"+buildID+"/log"), nil)
 		body, err := doRequest(req)
 		if err != nil {
 			return err

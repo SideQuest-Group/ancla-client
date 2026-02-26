@@ -1,16 +1,16 @@
 ---
 title: Project Linking
-description: Link your working directory to an Ancla app so commands know what to target.
+description: Link your working directory to an Ancla service so commands know what to target.
 ---
 
-Most workflow commands (`status`, `logs`, `run`, `down`, `ssh`, `shell`, `dbshell`) need to know which application you're working on. Instead of passing `org/project/app` to every command, link your directory once and forget about it.
+Most workflow commands (`status`, `logs`, `run`, `down`, `ssh`, `shell`, `dbshell`) need to know which service you're working on. Instead of passing `workspace/project/env/service` to every command, link your directory once and forget about it.
 
 ## Quick link
 
-If you already know your org, project, and app slugs:
+If you already know your workspace, project, environment, and service slugs:
 
 ```bash
-ancla link my-org/my-project/my-app
+ancla link my-ws/my-project/production/my-service
 ```
 
 This writes a `.ancla/config.yaml` in your current directory. Every `ancla` command run from this directory (or any subdirectory) will pick it up.
@@ -18,8 +18,9 @@ This writes a `.ancla/config.yaml` in your current directory. Every `ancla` comm
 You can also link at a higher level:
 
 ```bash
-ancla link my-org                       # org only
-ancla link my-org/my-project            # org + project
+ancla link my-ws                                  # workspace only
+ancla link my-ws/my-project                       # workspace + project
+ancla link my-ws/my-project/production            # workspace + project + env
 ```
 
 ## Interactive setup with `init`
@@ -30,7 +31,7 @@ If you'd rather pick from a menu:
 ancla init
 ```
 
-This fetches your orgs, projects, and apps from the API and walks you through selecting each one. The result is the same `.ancla/config.yaml` file.
+This fetches your workspaces, projects, environments, and services from the API and walks you through selecting each one. The result is the same `.ancla/config.yaml` file.
 
 If the directory is already linked, `init` asks before overwriting.
 
@@ -39,9 +40,10 @@ If the directory is already linked, `init` asks before overwriting.
 The link creates `.ancla/config.yaml` in your working directory:
 
 ```yaml
-org: my-org
+workspace: my-ws
 project: my-project
-app: my-app
+env: production
+service: my-service
 ```
 
 This is separate from your global config at `~/.ancla/config.yaml` (which holds your API key and server URL). The local file only stores the link context.
@@ -52,16 +54,16 @@ This is separate from your global config at `~/.ancla/config.yaml` (which holds 
 ancla status
 ```
 
-Shows the linked org, project, and app along with the current pipeline status (build/release/deploy).
+Shows the linked workspace, project, environment, and service along with the current pipeline status (build/deploy).
 
 ```
-Org:     my-org
-Project: my-project
-App:     my-app
+Workspace: my-ws
+Project:   my-project
+Env:       production
+Service:   my-service
 
 STAGE    STATUS
 Build    complete
-Release  complete
 Deploy   running
 ```
 
@@ -75,18 +77,18 @@ Removes the local `.ancla/config.yaml`. Commands that depend on a link will prom
 
 ## How link resolution works
 
-When you run a command that needs an app context, the CLI looks for `.ancla/config.yaml` starting from your current directory and walking up toward the filesystem root. The first one it finds wins.
+When you run a command that needs a service context, the CLI looks for `.ancla/config.yaml` starting from your current directory and walking up toward the filesystem root. The first one it finds wins.
 
 This means you can have a monorepo with per-service links:
 
 ```
 my-monorepo/
-  .ancla/config.yaml          # org + project level
+  .ancla/config.yaml          # workspace + project level
   services/
     api/
-      .ancla/config.yaml      # linked to the api app
+      .ancla/config.yaml      # linked to the api service in production
     frontend/
-      .ancla/config.yaml      # linked to the frontend app
+      .ancla/config.yaml      # linked to the frontend service in production
 ```
 
 ## Link vs. explicit arguments
@@ -94,6 +96,6 @@ my-monorepo/
 Every command that uses the link context also accepts an explicit argument. The argument always wins:
 
 ```bash
-ancla ssh                              # uses linked app
-ancla ssh other-org/other-proj/other   # ignores link, uses argument
+ancla ssh                                                  # uses linked service
+ancla ssh other-ws/other-proj/staging/other-svc            # ignores link, uses argument
 ```

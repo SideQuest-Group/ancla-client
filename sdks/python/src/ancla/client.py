@@ -15,18 +15,17 @@ from ancla.exceptions import (
     ValidationError,
 )
 from ancla.models import (
-    App,
+    Build,
+    BuildList,
     ConfigVar,
-    CreateReleaseResult,
-    Deployment,
-    DeployReleaseResult,
+    Deploy,
+    DeployList,
+    DeployLog,
     DeployResult,
-    Image,
-    ImageList,
-    Org,
+    Environment,
     Project,
-    Release,
-    ReleaseList,
+    Service,
+    Workspace,
 )
 
 _DEFAULT_SERVER = "https://ancla.dev"
@@ -51,11 +50,7 @@ class AnclaClient:
         timeout: float = 30.0,
     ) -> None:
         self.api_key = api_key or os.environ.get("ANCLA_API_KEY", "")
-        self.server = (
-            server
-            or os.environ.get("ANCLA_SERVER")
-            or _DEFAULT_SERVER
-        ).rstrip("/")
+        self.server = (server or os.environ.get("ANCLA_SERVER") or _DEFAULT_SERVER).rstrip("/")
         self._client = httpx.Client(
             base_url=f"{self.server}/api/v1",
             headers=self._build_headers(),
@@ -119,114 +114,136 @@ class AnclaClient:
         self.close()
 
     # ------------------------------------------------------------------
-    # Organizations
+    # Workspaces
     # ------------------------------------------------------------------
 
-    def list_orgs(self) -> list[Org]:
-        """List all organizations the authenticated user belongs to."""
-        resp = self._request("GET", "/organizations/")
-        return [Org.model_validate(item) for item in resp.json()]
+    def list_workspaces(self) -> list[Workspace]:
+        """List all workspaces the authenticated user belongs to."""
+        resp = self._request("GET", "/workspaces/")
+        return [Workspace.model_validate(item) for item in resp.json()]
 
-    def get_org(self, slug: str) -> Org:
-        """Get details for a single organization by slug."""
-        resp = self._request("GET", f"/organizations/{slug}")
-        return Org.model_validate(resp.json())
+    def get_workspace(self, slug: str) -> Workspace:
+        """Get details for a single workspace by slug."""
+        resp = self._request("GET", f"/workspaces/{slug}")
+        return Workspace.model_validate(resp.json())
 
-    def create_org(self, name: str) -> Org:
-        """Create a new organization."""
-        resp = self._request("POST", "/organizations/", json={"name": name})
-        return Org.model_validate(resp.json())
+    def create_workspace(self, name: str) -> Workspace:
+        """Create a new workspace."""
+        resp = self._request("POST", "/workspaces/", json={"name": name})
+        return Workspace.model_validate(resp.json())
 
-    def update_org(self, slug: str, name: str) -> Org:
-        """Rename an organization."""
-        resp = self._request("PATCH", f"/organizations/{slug}", json={"name": name})
-        return Org.model_validate(resp.json())
+    def update_workspace(self, slug: str, name: str) -> Workspace:
+        """Rename a workspace."""
+        resp = self._request("PATCH", f"/workspaces/{slug}", json={"name": name})
+        return Workspace.model_validate(resp.json())
 
-    def delete_org(self, slug: str) -> None:
-        """Delete an organization by slug."""
-        self._request("DELETE", f"/organizations/{slug}")
+    def delete_workspace(self, slug: str) -> None:
+        """Delete a workspace by slug."""
+        self._request("DELETE", f"/workspaces/{slug}")
 
     # ------------------------------------------------------------------
     # Projects
     # ------------------------------------------------------------------
 
-    def list_projects(self, org: str) -> list[Project]:
-        """List all projects in an organization."""
-        resp = self._request("GET", f"/projects/{org}")
+    def list_projects(self, ws: str) -> list[Project]:
+        """List all projects in a workspace."""
+        resp = self._request("GET", f"/workspaces/{ws}/projects/")
         return [Project.model_validate(item) for item in resp.json()]
 
-    def get_project(self, org: str, slug: str) -> Project:
+    def get_project(self, ws: str, slug: str) -> Project:
         """Get details for a single project."""
-        resp = self._request("GET", f"/projects/{org}/{slug}")
+        resp = self._request("GET", f"/workspaces/{ws}/projects/{slug}")
         return Project.model_validate(resp.json())
 
-    def create_project(self, org: str, name: str) -> Project:
-        """Create a new project in an organization."""
-        resp = self._request("POST", f"/projects/{org}", json={"name": name})
+    def create_project(self, ws: str, name: str) -> Project:
+        """Create a new project in a workspace."""
+        resp = self._request("POST", f"/workspaces/{ws}/projects/", json={"name": name})
         return Project.model_validate(resp.json())
 
-    def update_project(self, org: str, slug: str, name: str) -> Project:
+    def update_project(self, ws: str, slug: str, name: str) -> Project:
         """Rename a project."""
-        resp = self._request(
-            "PATCH", f"/projects/{org}/{slug}", json={"name": name}
-        )
+        resp = self._request("PATCH", f"/workspaces/{ws}/projects/{slug}", json={"name": name})
         return Project.model_validate(resp.json())
 
-    def delete_project(self, org: str, slug: str) -> None:
+    def delete_project(self, ws: str, slug: str) -> None:
         """Delete a project."""
-        self._request("DELETE", f"/projects/{org}/{slug}")
+        self._request("DELETE", f"/workspaces/{ws}/projects/{slug}")
 
     # ------------------------------------------------------------------
-    # Applications
+    # Environments
     # ------------------------------------------------------------------
 
-    def list_apps(self, org: str, project: str) -> list[App]:
-        """List all applications in a project."""
-        resp = self._request("GET", f"/applications/{org}/{project}")
-        return [App.model_validate(item) for item in resp.json()]
+    def _env_base(self, ws: str, proj: str) -> str:
+        return f"/workspaces/{ws}/projects/{proj}/envs"
 
-    def get_app(self, org: str, project: str, slug: str) -> App:
-        """Get details for a single application."""
-        resp = self._request("GET", f"/applications/{org}/{project}/{slug}")
-        return App.model_validate(resp.json())
+    def list_envs(self, ws: str, proj: str) -> list[Environment]:
+        """List all environments in a project."""
+        resp = self._request("GET", f"{self._env_base(ws, proj)}/")
+        return [Environment.model_validate(item) for item in resp.json()]
 
-    def create_app(
-        self, org: str, project: str, name: str, platform: str
-    ) -> App:
-        """Create a new application in a project."""
+    def get_env(self, ws: str, proj: str, slug: str) -> Environment:
+        """Get details for a single environment."""
+        resp = self._request("GET", f"{self._env_base(ws, proj)}/{slug}")
+        return Environment.model_validate(resp.json())
+
+    def create_env(self, ws: str, proj: str, name: str) -> Environment:
+        """Create a new environment in a project."""
+        resp = self._request("POST", f"{self._env_base(ws, proj)}/", json={"name": name})
+        return Environment.model_validate(resp.json())
+
+    # ------------------------------------------------------------------
+    # Services
+    # ------------------------------------------------------------------
+
+    def _svc_base(self, ws: str, proj: str, env: str) -> str:
+        return f"/workspaces/{ws}/projects/{proj}/envs/{env}/services"
+
+    def list_services(self, ws: str, proj: str, env: str) -> list[Service]:
+        """List all services in an environment."""
+        resp = self._request("GET", f"{self._svc_base(ws, proj, env)}/")
+        return [Service.model_validate(item) for item in resp.json()]
+
+    def get_service(self, ws: str, proj: str, env: str, slug: str) -> Service:
+        """Get details for a single service."""
+        resp = self._request("GET", f"{self._svc_base(ws, proj, env)}/{slug}")
+        return Service.model_validate(resp.json())
+
+    def create_service(self, ws: str, proj: str, env: str, name: str, platform: str) -> Service:
+        """Create a new service in an environment."""
         resp = self._request(
             "POST",
-            f"/applications/{org}/{project}",
+            f"{self._svc_base(ws, proj, env)}/",
             json={"name": name, "platform": platform},
         )
-        return App.model_validate(resp.json())
+        return Service.model_validate(resp.json())
 
-    def update_app(
-        self, org: str, project: str, slug: str, **kwargs: Any
-    ) -> App:
-        """Update application attributes (name, platform, etc.)."""
+    def update_service(self, ws: str, proj: str, env: str, slug: str, **kwargs: Any) -> Service:
+        """Update service attributes (name, platform, etc.)."""
         resp = self._request(
             "PATCH",
-            f"/applications/{org}/{project}/{slug}",
+            f"{self._svc_base(ws, proj, env)}/{slug}",
             json=kwargs,
         )
-        return App.model_validate(resp.json())
+        return Service.model_validate(resp.json())
 
-    def delete_app(self, org: str, project: str, slug: str) -> None:
-        """Delete an application."""
-        self._request("DELETE", f"/applications/{org}/{project}/{slug}")
+    def delete_service(self, ws: str, proj: str, env: str, slug: str) -> None:
+        """Delete a service."""
+        self._request("DELETE", f"{self._svc_base(ws, proj, env)}/{slug}")
 
-    def deploy_app(self, org: str, project: str, slug: str) -> DeployResult:
-        """Trigger a full deploy for an application."""
-        resp = self._request(
-            "POST", f"/applications/{org}/{project}/{slug}/deploy"
-        )
+    def deploy_service(self, ws: str, proj: str, env: str, slug: str) -> DeployResult:
+        """Trigger a full deploy for a service."""
+        resp = self._request("POST", f"{self._svc_base(ws, proj, env)}/{slug}/deploy")
         return DeployResult.model_validate(resp.json())
 
-    def scale_app(
-        self, org: str, project: str, slug: str, counts: dict[str, int]
+    def scale_service(
+        self,
+        ws: str,
+        proj: str,
+        env: str,
+        slug: str,
+        counts: dict[str, int],
     ) -> None:
-        """Scale application processes.
+        """Scale service processes.
 
         Args:
             counts: Mapping of process name to desired count,
@@ -234,35 +251,60 @@ class AnclaClient:
         """
         self._request(
             "POST",
-            f"/applications/{org}/{project}/{slug}/scale",
+            f"{self._svc_base(ws, proj, env)}/{slug}/scale",
             json={"process_counts": counts},
         )
+
+    # ------------------------------------------------------------------
+    # Builds
+    # ------------------------------------------------------------------
+
+    def list_builds(self, ws: str, proj: str, env: str, svc: str) -> list[Build]:
+        """List builds for a service."""
+        resp = self._request("GET", f"{self._svc_base(ws, proj, env)}/{svc}/builds/")
+        result = BuildList.model_validate(resp.json())
+        return result.items
+
+    def get_build(self, build_id: str) -> Build:
+        """Get a single build by ID."""
+        resp = self._request("GET", f"/builds/{build_id}")
+        return Build.model_validate(resp.json())
+
+    def get_build_log(self, build_id: str) -> DeployLog:
+        """Get log output for a build."""
+        resp = self._request("GET", f"/builds/{build_id}/log")
+        return DeployLog.model_validate(resp.json())
+
+    # ------------------------------------------------------------------
+    # Deploys
+    # ------------------------------------------------------------------
+
+    def list_deploys(self, ws: str, proj: str, env: str, svc: str) -> list[Deploy]:
+        """List deploys for a service."""
+        resp = self._request("GET", f"{self._svc_base(ws, proj, env)}/{svc}/deploys/")
+        result = DeployList.model_validate(resp.json())
+        return result.items
+
+    def get_deploy(self, deploy_id: str) -> Deploy:
+        """Get deploy details by ID."""
+        resp = self._request("GET", f"/deploys/{deploy_id}/detail")
+        return Deploy.model_validate(resp.json())
 
     # ------------------------------------------------------------------
     # Configuration
     # ------------------------------------------------------------------
 
-    def list_config(self, org: str, project: str, app: str) -> list[ConfigVar]:
-        """List configuration variables for an application."""
-        resp = self._request(
-            "GET", f"/configurations/{org}/{project}/{app}"
-        )
+    def list_config(self, ws: str, proj: str, env: str, svc: str) -> list[ConfigVar]:
+        """List configuration variables for a service."""
+        resp = self._request("GET", f"{self._svc_base(ws, proj, env)}/{svc}/config/")
         return [ConfigVar.model_validate(item) for item in resp.json()]
-
-    def get_config(
-        self, org: str, project: str, app: str, key: str
-    ) -> ConfigVar:
-        """Get a single configuration variable by key name."""
-        resp = self._request(
-            "GET", f"/configurations/{org}/{project}/{app}/{key}"
-        )
-        return ConfigVar.model_validate(resp.json())
 
     def set_config(
         self,
-        org: str,
-        project: str,
-        app: str,
+        ws: str,
+        proj: str,
+        env: str,
+        svc: str,
         key: str,
         value: str,
         secret: bool = False,
@@ -270,90 +312,14 @@ class AnclaClient:
         """Set (create or update) a configuration variable."""
         resp = self._request(
             "POST",
-            f"/configurations/{org}/{project}/{app}",
+            f"{self._svc_base(ws, proj, env)}/{svc}/config/",
             json={"name": key, "value": value, "secret": secret},
         )
         return ConfigVar.model_validate(resp.json())
 
-    def delete_config(
-        self, org: str, project: str, app: str, key: str
-    ) -> None:
+    def delete_config(self, ws: str, proj: str, env: str, svc: str, key: str) -> None:
         """Delete a configuration variable."""
         self._request(
-            "DELETE", f"/configurations/{org}/{project}/{app}/{key}"
+            "DELETE",
+            f"{self._svc_base(ws, proj, env)}/{svc}/config/{key}",
         )
-
-    # ------------------------------------------------------------------
-    # Images
-    # ------------------------------------------------------------------
-
-    def list_images(
-        self, org: str, project: str, app: str
-    ) -> list[Image]:
-        """List images for an application."""
-        resp = self._request("GET", f"/images/{org}/{project}/{app}")
-        result = ImageList.model_validate(resp.json())
-        return result.items
-
-    def get_image(
-        self, org: str, project: str, app: str, image_id: str
-    ) -> Image:
-        """Get a single image by ID."""
-        resp = self._request(
-            "GET", f"/images/{org}/{project}/{app}/{image_id}"
-        )
-        return Image.model_validate(resp.json())
-
-    # ------------------------------------------------------------------
-    # Releases
-    # ------------------------------------------------------------------
-
-    def list_releases(
-        self, org: str, project: str, app: str
-    ) -> list[Release]:
-        """List releases for an application."""
-        resp = self._request("GET", f"/releases/{org}/{project}/{app}")
-        result = ReleaseList.model_validate(resp.json())
-        return result.items
-
-    def get_release(
-        self, org: str, project: str, app: str, release_id: str
-    ) -> Release:
-        """Get a single release by ID."""
-        resp = self._request(
-            "GET", f"/releases/{org}/{project}/{app}/{release_id}"
-        )
-        return Release.model_validate(resp.json())
-
-    def create_release(
-        self, org: str, project: str, app: str, image_id: str
-    ) -> CreateReleaseResult:
-        """Create a new release from an image."""
-        resp = self._request(
-            "POST",
-            f"/releases/{org}/{project}/{app}/create",
-            json={"image_id": image_id},
-        )
-        return CreateReleaseResult.model_validate(resp.json())
-
-    # ------------------------------------------------------------------
-    # Deployments
-    # ------------------------------------------------------------------
-
-    def list_deployments(
-        self, org: str, project: str, app: str
-    ) -> list[Deployment]:
-        """List deployments for an application."""
-        resp = self._request(
-            "GET", f"/deployments/{org}/{project}/{app}"
-        )
-        return [Deployment.model_validate(item) for item in resp.json()]
-
-    def get_deployment(
-        self, org: str, project: str, app: str, deployment_id: str
-    ) -> Deployment:
-        """Get deployment details by ID."""
-        resp = self._request(
-            "GET", f"/deployments/{deployment_id}/detail"
-        )
-        return Deployment.model_validate(resp.json())

@@ -27,11 +27,11 @@ type ProjectResource struct {
 
 // ProjectResourceModel maps the resource schema data.
 type ProjectResourceModel struct {
-	ID               types.String `tfsdk:"id"`
-	Name             types.String `tfsdk:"name"`
-	Slug             types.String `tfsdk:"slug"`
-	OrganizationSlug types.String `tfsdk:"organization_slug"`
-	ApplicationCount types.Int64  `tfsdk:"application_count"`
+	ID            types.String `tfsdk:"id"`
+	Name          types.String `tfsdk:"name"`
+	Slug          types.String `tfsdk:"slug"`
+	WorkspaceSlug types.String `tfsdk:"workspace_slug"`
+	ServiceCount  types.Int64  `tfsdk:"service_count"`
 }
 
 func NewProjectResource() resource.Resource {
@@ -44,7 +44,7 @@ func (r *ProjectResource) Metadata(_ context.Context, req resource.MetadataReque
 
 func (r *ProjectResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Manages an Ancla project within an organization.",
+		Description: "Manages an Ancla project within a workspace.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Description: "The unique identifier of the project.",
@@ -64,15 +64,15 @@ func (r *ProjectResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"organization_slug": schema.StringAttribute{
-				Description: "The slug of the organization this project belongs to.",
+			"workspace_slug": schema.StringAttribute{
+				Description: "The slug of the workspace this project belongs to.",
 				Required:    true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
-			"application_count": schema.Int64Attribute{
-				Description: "The number of applications in the project.",
+			"service_count": schema.Int64Attribute{
+				Description: "The number of services in the project.",
 				Computed:    true,
 			},
 		},
@@ -100,7 +100,7 @@ func (r *ProjectResource) Create(ctx context.Context, req resource.CreateRequest
 		return
 	}
 
-	project, err := r.client.CreateProject(plan.OrganizationSlug.ValueString(), plan.Name.ValueString())
+	project, err := r.client.CreateProject(plan.WorkspaceSlug.ValueString(), plan.Name.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError("Error creating project", err.Error())
 		return
@@ -109,8 +109,8 @@ func (r *ProjectResource) Create(ctx context.Context, req resource.CreateRequest
 	plan.ID = types.StringValue(project.ID)
 	plan.Slug = types.StringValue(project.Slug)
 	plan.Name = types.StringValue(project.Name)
-	plan.OrganizationSlug = types.StringValue(project.OrganizationSlug)
-	plan.ApplicationCount = types.Int64Value(int64(project.ApplicationCount))
+	plan.WorkspaceSlug = types.StringValue(project.WorkspaceSlug)
+	plan.ServiceCount = types.Int64Value(int64(project.ServiceCount))
 
 	diags = resp.State.Set(ctx, plan)
 	resp.Diagnostics.Append(diags...)
@@ -124,7 +124,7 @@ func (r *ProjectResource) Read(ctx context.Context, req resource.ReadRequest, re
 		return
 	}
 
-	project, err := r.client.GetProject(state.OrganizationSlug.ValueString(), state.Slug.ValueString())
+	project, err := r.client.GetProject(state.WorkspaceSlug.ValueString(), state.Slug.ValueString())
 	if err != nil {
 		if client.IsNotFound(err) {
 			resp.State.RemoveResource(ctx)
@@ -137,8 +137,8 @@ func (r *ProjectResource) Read(ctx context.Context, req resource.ReadRequest, re
 	state.ID = types.StringValue(project.ID)
 	state.Name = types.StringValue(project.Name)
 	state.Slug = types.StringValue(project.Slug)
-	state.OrganizationSlug = types.StringValue(project.OrganizationSlug)
-	state.ApplicationCount = types.Int64Value(int64(project.ApplicationCount))
+	state.WorkspaceSlug = types.StringValue(project.WorkspaceSlug)
+	state.ServiceCount = types.Int64Value(int64(project.ServiceCount))
 
 	diags = resp.State.Set(ctx, state)
 	resp.Diagnostics.Append(diags...)
@@ -160,7 +160,7 @@ func (r *ProjectResource) Update(ctx context.Context, req resource.UpdateRequest
 	}
 
 	project, err := r.client.UpdateProject(
-		state.OrganizationSlug.ValueString(),
+		state.WorkspaceSlug.ValueString(),
 		state.Slug.ValueString(),
 		plan.Name.ValueString(),
 	)
@@ -172,8 +172,8 @@ func (r *ProjectResource) Update(ctx context.Context, req resource.UpdateRequest
 	plan.ID = types.StringValue(project.ID)
 	plan.Slug = types.StringValue(project.Slug)
 	plan.Name = types.StringValue(project.Name)
-	plan.OrganizationSlug = types.StringValue(project.OrganizationSlug)
-	plan.ApplicationCount = types.Int64Value(int64(project.ApplicationCount))
+	plan.WorkspaceSlug = types.StringValue(project.WorkspaceSlug)
+	plan.ServiceCount = types.Int64Value(int64(project.ServiceCount))
 
 	diags = resp.State.Set(ctx, plan)
 	resp.Diagnostics.Append(diags...)
@@ -187,21 +187,21 @@ func (r *ProjectResource) Delete(ctx context.Context, req resource.DeleteRequest
 		return
 	}
 
-	if err := r.client.DeleteProject(state.OrganizationSlug.ValueString(), state.Slug.ValueString()); err != nil {
+	if err := r.client.DeleteProject(state.WorkspaceSlug.ValueString(), state.Slug.ValueString()); err != nil {
 		resp.Diagnostics.AddError("Error deleting project", err.Error())
 		return
 	}
 }
 
 func (r *ProjectResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	// Import ID format: org-slug/project-slug
+	// Import ID format: ws-slug/project-slug
 	parts := strings.SplitN(req.ID, "/", 2)
 	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
 		resp.Diagnostics.AddError("Invalid import ID",
-			"Expected import ID format: <organization_slug>/<project_slug>")
+			"Expected import ID format: <workspace_slug>/<project_slug>")
 		return
 	}
 
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("organization_slug"), parts[0])...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("workspace_slug"), parts[0])...)
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("slug"), parts[1])...)
 }

@@ -1,137 +1,232 @@
 ---
-title: Environments
-description: API reference for managing project environments.
+title: "Environments"
+description: API reference for environments endpoints.
 ---
 
-Environments represent deployment targets within a project (production, staging, development, preview). Each environment has its own config variables, services, and deployment history.
+<!-- Auto-generated from openapi.json — do not edit manually -->
 
-## List environments
+## List Environments
 
 ```http
-GET /orgs/{org}/projects/{project}/envs/
+GET /workspaces/{workspace}/projects/{project}/envs
 ```
 
-### Response
+**Path parameters:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `workspace` | string |  |
+| `project` | string |  |
+
+**Response:**
 
 ```json
 [
-  {
-    "id": "uuid",
-    "name": "Production",
-    "slug": "production",
-    "env_type": "production",
-    "protected": true,
-    "auto_deploy_branch": "main",
-    "ephemeral": false
-  }
+  {}
 ]
 ```
 
-## Create an environment
+
+## Get Environment
 
 ```http
-POST /orgs/{org}/projects/{project}/envs/
+GET /workspaces/{workspace}/projects/{project}/envs/{env}
 ```
 
-### Request body
+**Path parameters:**
 
-```json
-{
-  "name": "Preview PR-42",
-  "env_type": "preview",
-  "auto_deploy_branch": "feature/login",
-  "protected": false
-}
-```
+| Name | Type | Description |
+|------|------|-------------|
+| `workspace` | string |  |
+| `project` | string |  |
+| `env` | string |  |
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `name` | string | yes | Display name |
-| `env_type` | string | no | One of: `production`, `staging`, `development`, `preview`. Defaults to `development`. |
-| `auto_deploy_branch` | string | no | Git branch that triggers auto-deploy |
-| `protected` | bool | no | Whether deployments require approval |
 
-## Get an environment
+## List Config
 
 ```http
-GET /orgs/{org}/projects/{project}/envs/{env}
+GET /workspaces/{workspace}/projects/{project}/envs/{env}/config
 ```
 
-## Update an environment
+**Path parameters:**
 
-```http
-PATCH /orgs/{org}/projects/{project}/envs/{env}
-```
+| Name | Type | Description |
+|------|------|-------------|
+| `workspace` | string |  |
+| `project` | string |  |
+| `env` | string |  |
 
-Accepts the same fields as create (all optional).
-
-## Environment configuration
-
-### List config
-
-```http
-GET /orgs/{org}/projects/{project}/envs/{env}/config
-```
-
-### Set a config variable
-
-```http
-POST /orgs/{org}/projects/{project}/envs/{env}/config
-```
-
-```json
-{
-  "name": "DATABASE_URL",
-  "value": "postgres://...",
-  "secret": true
-}
-```
-
-### Delete a config variable
-
-```http
-DELETE /orgs/{org}/projects/{project}/envs/{env}/config/{config_id}
-```
-
-### Bulk set config
-
-```http
-POST /orgs/{org}/projects/{project}/envs/{env}/config/bulk
-```
+**Response:**
 
 ```json
 [
-  {"name": "KEY_1", "value": "val1"},
-  {"name": "KEY_2", "value": "val2", "secret": true}
+  {}
 ]
 ```
 
-## Environment deployments
 
-### List deployments
-
-```http
-GET /orgs/{org}/projects/{project}/envs/{env}/deployments
-```
-
-Returns the most recent 50 deployments.
-
-### Get a deployment
+## List Deploys
 
 ```http
-GET /orgs/{org}/projects/{project}/envs/{env}/deployments/{deployment_id}
+GET /workspaces/{workspace}/projects/{project}/envs/{env}/deploys
 ```
 
-### Get deployment log
+**Path parameters:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `workspace` | string |  |
+| `project` | string |  |
+| `env` | string |  |
+
+**Response:**
+
+```json
+[
+  {}
+]
+```
+
+
+## Get Deploy
 
 ```http
-GET /orgs/{org}/projects/{project}/envs/{env}/deployments/{deployment_id}/log
+GET /workspaces/{workspace}/projects/{project}/envs/{env}/deploys/{deploy_id}
 ```
 
-### Trigger a deploy
+**Path parameters:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `workspace` | string |  |
+| `project` | string |  |
+| `env` | string |  |
+| `deploy_id` | string |  |
+
+
+## Get Deploy Log
 
 ```http
-POST /orgs/{org}/projects/{project}/envs/{env}/deploy?service={slug}
+GET /workspaces/{workspace}/projects/{project}/envs/{env}/deploys/{deploy_id}/log
 ```
 
-Deploys a specific service within the environment. The `service` query parameter is the service slug.
+**Path parameters:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `workspace` | string |  |
+| `project` | string |  |
+| `env` | string |  |
+| `deploy_id` | string |  |
+
+
+## Create Environment
+
+```http
+POST /workspaces/{workspace}/projects/{project}/envs
+```
+
+**Path parameters:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `workspace` | string |  |
+| `project` | string |  |
+
+
+## Create Config
+
+```http
+POST /workspaces/{workspace}/projects/{project}/envs/{env}/config
+```
+
+**Path parameters:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `workspace` | string |  |
+| `project` | string |  |
+| `env` | string |  |
+
+
+## Bulk Create Config
+
+```http
+POST /workspaces/{workspace}/projects/{project}/envs/{env}/config/bulk
+```
+
+**Path parameters:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `workspace` | string |  |
+| `project` | string |  |
+| `env` | string |  |
+
+**Request body:**
+
+```json
+[
+  {}
+]
+```
+
+**Response:**
+
+```json
+[
+  {}
+]
+```
+
+
+## Deploy Env
+
+```http
+POST /workspaces/{workspace}/projects/{project}/envs/{env}/deploy
+```
+
+**Path parameters:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `workspace` | string |  |
+| `project` | string |  |
+| `env` | string |  |
+
+**Query parameters:**
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| `service` | string | No |  |
+
+
+## Update Environment
+
+```http
+PATCH /workspaces/{workspace}/projects/{project}/envs/{env}
+```
+
+**Path parameters:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `workspace` | string |  |
+| `project` | string |  |
+| `env` | string |  |
+
+
+## Delete Config
+
+```http
+DELETE /workspaces/{workspace}/projects/{project}/envs/{env}/config/{config_id}
+```
+
+**Path parameters:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `workspace` | string |  |
+| `project` | string |  |
+| `env` | string |  |
+| `config_id` | string |  |

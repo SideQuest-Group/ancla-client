@@ -25,8 +25,8 @@ var rootCmd = &cobra.Command{
 	Use:   "ancla",
 	Short: "Ancla CLI — manage your Ancla PaaS deployments",
 	Long: `Ancla CLI is a command-line client for the Ancla deployment platform.
-It communicates with the Ancla API to manage organizations, projects,
-applications, images, releases, deployments, and configuration.`,
+It communicates with the Ancla API to manage workspaces, projects,
+environments, services, builds, deploys, and configuration.`,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		var err error
 		cfg, err = config.Load()

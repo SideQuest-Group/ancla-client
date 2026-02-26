@@ -26,17 +26,15 @@ Or use session-based auth via the login endpoint.
 | Resource | Description |
 |----------|-------------|
 | [Authentication](/api/authentication/) | Session, login, logout, CLI auth, OAuth |
-| [Organizations](/api/organizations/) | Manage orgs, members, and org-level config |
-| [Projects](/api/projects/) | Create and manage projects within orgs |
-| [Applications](/api/applications/) | CRUD, scaling, deploy, pipeline status |
+| [Workspaces](/api/workspaces/) | Manage workspaces, members, and workspace-level config |
+| [Projects](/api/projects/) | Create and manage projects within workspaces |
 | [Environments](/api/environments/) | Deployment targets (production, staging, preview) |
 | [Services](/api/services/) | Deployable units within environments |
-| [Images](/api/images/) | Build and inspect container images |
-| [Releases](/api/releases/) | Create releases and trigger deploys |
-| [Deployments](/api/deployments/) | Inspect deployment status and logs |
-| [Configuration](/api/configuration/) | Manage environment variables at every scope |
+| [Builds](/api/builds/) | Build container images for services |
+| [Deploys](/api/deploys/) | Deploy builds and inspect deploy status and logs |
+| [Config Vars](/api/config-vars/) | Manage environment variables at every scope (workspace, project, env, service) |
 | [Pipeline](/api/pipeline/) | Pipeline status, metrics, deploy, rollback |
-| [Promotions](/api/promotions/) | Promote releases between environments |
+| [Promotions](/api/promotions/) | Promote builds between environments |
 | [Observability](/api/observability/) | CPU, memory, and pod metrics |
 | [Teams](/api/teams/) | Team management and team-scoped config |
 | [Integrations](/api/integrations/) | Docker auth, GitHub webhooks, signing certs |

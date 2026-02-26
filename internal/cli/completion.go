@@ -51,12 +51,12 @@ To load completions:
 	},
 }
 
-// completeOrgs fetches organization slugs from the API for shell completion.
-func completeOrgs(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+// completeWorkspaces fetches workspace slugs from the API for shell completion.
+func completeWorkspaces(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 	if cfg == nil || cfg.APIKey == "" {
 		return nil, cobra.ShellCompDirectiveNoFileComp
 	}
-	req, err := http.NewRequest("GET", apiURL("/organizations/"), nil)
+	req, err := http.NewRequest("GET", apiURL("/workspaces/"), nil)
 	if err != nil {
 		return nil, cobra.ShellCompDirectiveNoFileComp
 	}
@@ -64,26 +64,26 @@ func completeOrgs(cmd *cobra.Command, args []string, toComplete string) ([]strin
 	if err != nil {
 		return nil, cobra.ShellCompDirectiveNoFileComp
 	}
-	var orgs []struct {
+	var workspaces []struct {
 		Slug string `json:"slug"`
 		Name string `json:"name"`
 	}
-	if json.Unmarshal(body, &orgs) != nil {
+	if json.Unmarshal(body, &workspaces) != nil {
 		return nil, cobra.ShellCompDirectiveNoFileComp
 	}
 	var completions []string
-	for _, o := range orgs {
-		completions = append(completions, o.Slug+"\t"+o.Name)
+	for _, w := range workspaces {
+		completions = append(completions, w.Slug+"\t"+w.Name)
 	}
 	return completions, cobra.ShellCompDirectiveNoFileComp
 }
 
-// completeProjects fetches org/project slugs from the API for shell completion.
+// completeProjects fetches project slugs for the linked workspace for shell completion.
 func completeProjects(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-	if cfg == nil || cfg.APIKey == "" {
+	if cfg == nil || cfg.APIKey == "" || cfg.Workspace == "" {
 		return nil, cobra.ShellCompDirectiveNoFileComp
 	}
-	req, err := http.NewRequest("GET", apiURL("/projects/"), nil)
+	req, err := http.NewRequest("GET", apiURL("/workspaces/"+cfg.Workspace+"/projects/"), nil)
 	if err != nil {
 		return nil, cobra.ShellCompDirectiveNoFileComp
 	}
@@ -92,16 +92,69 @@ func completeProjects(cmd *cobra.Command, args []string, toComplete string) ([]s
 		return nil, cobra.ShellCompDirectiveNoFileComp
 	}
 	var projects []struct {
-		Slug             string `json:"slug"`
-		Name             string `json:"name"`
-		OrganizationSlug string `json:"organization_slug"`
+		Slug string `json:"slug"`
+		Name string `json:"name"`
 	}
 	if json.Unmarshal(body, &projects) != nil {
 		return nil, cobra.ShellCompDirectiveNoFileComp
 	}
 	var completions []string
 	for _, p := range projects {
-		completions = append(completions, p.OrganizationSlug+"/"+p.Slug+"\t"+p.Name)
+		completions = append(completions, p.Slug+"\t"+p.Name)
+	}
+	return completions, cobra.ShellCompDirectiveNoFileComp
+}
+
+// completeEnvs fetches environment slugs for the linked workspace/project for shell completion.
+func completeEnvs(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	if cfg == nil || cfg.APIKey == "" || cfg.Workspace == "" || cfg.Project == "" {
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	}
+	req, err := http.NewRequest("GET", apiURL("/workspaces/"+cfg.Workspace+"/projects/"+cfg.Project+"/envs/"), nil)
+	if err != nil {
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	}
+	body, err := doRequest(req)
+	if err != nil {
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	}
+	var envs []struct {
+		Slug string `json:"slug"`
+		Name string `json:"name"`
+	}
+	if json.Unmarshal(body, &envs) != nil {
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	}
+	var completions []string
+	for _, e := range envs {
+		completions = append(completions, e.Slug+"\t"+e.Name)
+	}
+	return completions, cobra.ShellCompDirectiveNoFileComp
+}
+
+// completeServices fetches service slugs for the linked workspace/project/env for shell completion.
+func completeServices(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	if cfg == nil || cfg.APIKey == "" || cfg.Workspace == "" || cfg.Project == "" || cfg.Env == "" {
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	}
+	req, err := http.NewRequest("GET", apiURL("/workspaces/"+cfg.Workspace+"/projects/"+cfg.Project+"/envs/"+cfg.Env+"/services/"), nil)
+	if err != nil {
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	}
+	body, err := doRequest(req)
+	if err != nil {
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	}
+	var services []struct {
+		Slug string `json:"slug"`
+		Name string `json:"name"`
+	}
+	if json.Unmarshal(body, &services) != nil {
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	}
+	var completions []string
+	for _, s := range services {
+		completions = append(completions, s.Slug+"\t"+s.Name)
 	}
 	return completions, cobra.ShellCompDirectiveNoFileComp
 }

@@ -8,6 +8,8 @@ import (
 	"os/exec"
 
 	"github.com/spf13/cobra"
+
+	"github.com/SideQuest-Group/ancla-client/internal/config"
 )
 
 func init() {
@@ -20,26 +22,33 @@ func init() {
 
 var cacheCmd = &cobra.Command{
 	Use:   "cache",
-	Short: "Manage the application's cache service (Redis, etc.)",
-	Long: `Manage the cache service attached to your application.
+	Short: "Manage the service's cache (Redis, etc.)",
+	Long: `Manage the cache service attached to your service.
 
 Provides sub-commands to view cache info, open an interactive CLI session
-(e.g. redis-cli), or flush the cache. Requires a linked app or explicit path.`,
+(e.g. redis-cli), or flush the cache. Requires a linked service or explicit path.`,
 	Example: `  ancla cache info
   ancla cache cli
   ancla cache flush`,
 	GroupID: "workflow",
 }
 
-// resolveAppPath returns the app path from args or link context.
-func resolveAppPath(args []string) (string, error) {
+// resolveCachePath returns the API service path and display path from args or link context.
+func resolveCachePath(args []string) (apiPath string, displayPath string, err error) {
+	var arg string
 	if len(args) >= 1 {
-		return args[0], nil
+		arg = args[0]
 	}
-	if cfg.Org != "" && cfg.Project != "" && cfg.App != "" {
-		return cfg.Org + "/" + cfg.Project + "/" + cfg.App, nil
+	ws, proj, env, svc, err := config.ResolveServicePath(arg, cfg)
+	if err != nil {
+		return "", "", err
 	}
-	return "", fmt.Errorf("no app specified — provide an argument or run `ancla link` first")
+	if ws == "" || proj == "" || env == "" || svc == "" {
+		return "", "", fmt.Errorf("no service specified — provide an argument or run `ancla link` first")
+	}
+	apiPath = "/workspaces/" + ws + "/projects/" + proj + "/envs/" + env + "/services/" + svc
+	displayPath = ws + "/" + proj + "/" + env + "/" + svc
+	return apiPath, displayPath, nil
 }
 
 type cacheInfo struct {
@@ -50,8 +59,8 @@ type cacheInfo struct {
 	URL      string `json:"url"`
 }
 
-func fetchCacheInfo(appPath string) (*cacheInfo, error) {
-	req, _ := http.NewRequest("GET", apiURL("/applications/"+appPath+"/cache"), nil)
+func fetchCacheInfo(svcAPIPath string) (*cacheInfo, error) {
+	req, _ := http.NewRequest("GET", apiURL(svcAPIPath+"/cache"), nil)
 	body, err := doRequest(req)
 	if err != nil {
 		return nil, fmt.Errorf("no cache service found: %w", err)
@@ -64,18 +73,18 @@ func fetchCacheInfo(appPath string) (*cacheInfo, error) {
 }
 
 var cacheInfoCmd = &cobra.Command{
-	Use:     "info [app-path]",
+	Use:     "info [ws/proj/env/svc]",
 	Short:   "Show cache service details",
 	Example: "  ancla cache info",
 	Args:    cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		appPath, err := resolveAppPath(args)
+		svcAPIPath, _, err := resolveCachePath(args)
 		if err != nil {
 			return err
 		}
 
 		stop := spin("Fetching cache info...")
-		info, err := fetchCacheInfo(appPath)
+		info, err := fetchCacheInfo(svcAPIPath)
 		stop()
 		if err != nil {
 			return err
@@ -97,22 +106,22 @@ var cacheInfoCmd = &cobra.Command{
 }
 
 var cacheCliCmd = &cobra.Command{
-	Use:   "cli [app-path]",
+	Use:   "cli [ws/proj/env/svc]",
 	Short: "Open an interactive cache CLI session",
-	Long: `Open an interactive CLI session to the application's cache service.
+	Long: `Open an interactive CLI session to the service's cache.
 
 For Redis, launches redis-cli connected to the service. For other engines,
 prints the connection URL.`,
 	Example: "  ancla cache cli",
 	Args:    cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		appPath, err := resolveAppPath(args)
+		svcAPIPath, _, err := resolveCachePath(args)
 		if err != nil {
 			return err
 		}
 
 		stop := spin("Connecting...")
-		info, err := fetchCacheInfo(appPath)
+		info, err := fetchCacheInfo(svcAPIPath)
 		stop()
 		if err != nil {
 			return err
@@ -143,19 +152,19 @@ prints the connection URL.`,
 }
 
 var cacheFlushCmd = &cobra.Command{
-	Use:     "flush [app-path]",
-	Short:   "Flush the application cache",
+	Use:     "flush [ws/proj/env/svc]",
+	Short:   "Flush the service cache",
 	Example: "  ancla cache flush\n  ancla cache flush --yes",
 	Args:    cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		appPath, err := resolveAppPath(args)
+		svcAPIPath, displayPath, err := resolveCachePath(args)
 		if err != nil {
 			return err
 		}
 
 		yes, _ := cmd.Flags().GetBool("yes")
 		if !yes {
-			fmt.Printf("This will flush all cached data for %s.\n", appPath)
+			fmt.Printf("This will flush all cached data for %s.\n", displayPath)
 			fmt.Print("Continue? [y/N] ")
 			var answer string
 			fmt.Scanln(&answer)
@@ -166,7 +175,7 @@ var cacheFlushCmd = &cobra.Command{
 		}
 
 		stop := spin("Flushing cache...")
-		req, _ := http.NewRequest("POST", apiURL("/applications/"+appPath+"/cache/flush"), nil)
+		req, _ := http.NewRequest("POST", apiURL(svcAPIPath+"/cache/flush"), nil)
 		_, err = doRequest(req)
 		stop()
 		if err != nil {

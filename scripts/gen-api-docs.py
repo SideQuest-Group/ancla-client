@@ -19,15 +19,19 @@ SKIP_TAGS = {"untagged"}
 # Map tag names to URL-friendly slugs and display labels
 TAG_META = {
     "Auth": ("authentication", "Authentication"),
-    "Organizations": ("organizations", "Organizations"),
+    "Workspaces": ("workspaces", "Workspaces"),
+    "Organizations": ("workspaces", "Workspaces"),  # legacy tag alias
     "Projects": ("projects", "Projects"),
-    "Applications": ("applications", "Applications"),
     "Environments": ("environments", "Environments"),
     "Services": ("services", "Services"),
-    "Images": ("images", "Images"),
-    "Releases": ("releases", "Releases"),
-    "Deployments": ("deployments", "Deployments"),
-    "Configurations": ("configuration", "Configuration"),
+    "Applications": ("services", "Services"),  # legacy tag alias
+    "Builds": ("builds", "Builds"),
+    "Images": ("builds", "Builds"),  # legacy tag alias
+    "Deploys": ("deploys", "Deploys"),
+    "Releases": ("deploys", "Deploys"),  # legacy tag alias
+    "Deployments": ("deploys", "Deploys"),  # legacy tag alias
+    "ConfigVars": ("config-vars", "Config Vars"),
+    "Configurations": ("config-vars", "Config Vars"),  # legacy tag alias
     "Pipeline": ("pipeline", "Pipeline"),
     "Promotions": ("promotions", "Promotions"),
     "Observability": ("observability", "Observability"),

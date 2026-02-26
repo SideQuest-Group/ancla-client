@@ -1,21 +1,15 @@
 ---
-title: "Projects"
-description: API reference for projects endpoints.
+title: "Workspaces"
+description: API reference for workspaces endpoints.
 ---
 
 <!-- Auto-generated from openapi.json — do not edit manually -->
 
-## List Projects
+## List Workspaces
 
 ```http
-GET /workspaces/{workspace}/projects
+GET /workspaces
 ```
-
-**Path parameters:**
-
-| Name | Type | Description |
-|------|------|-------------|
-| `workspace` | string |  |
 
 **Response:**
 
@@ -26,10 +20,10 @@ GET /workspaces/{workspace}/projects
 ```
 
 
-## Get Project
+## Get Workspace
 
 ```http
-GET /workspaces/{workspace}/projects/{project}
+GET /workspaces/{workspace}
 ```
 
 **Path parameters:**
@@ -37,13 +31,12 @@ GET /workspaces/{workspace}/projects/{project}
 | Name | Type | Description |
 |------|------|-------------|
 | `workspace` | string |  |
-| `project` | string |  |
 
 
 ## List Config
 
 ```http
-GET /workspaces/{workspace}/projects/{project}/config
+GET /workspaces/{workspace}/config
 ```
 
 **Path parameters:**
@@ -51,7 +44,6 @@ GET /workspaces/{workspace}/projects/{project}/config
 | Name | Type | Description |
 |------|------|-------------|
 | `workspace` | string |  |
-| `project` | string |  |
 
 **Response:**
 
@@ -62,10 +54,10 @@ GET /workspaces/{workspace}/projects/{project}/config
 ```
 
 
-## Create Project
+## List Members
 
 ```http
-POST /workspaces/{workspace}/projects
+GET /workspaces/{workspace}/members
 ```
 
 **Path parameters:**
@@ -73,12 +65,27 @@ POST /workspaces/{workspace}/projects
 | Name | Type | Description |
 |------|------|-------------|
 | `workspace` | string |  |
+
+**Response:**
+
+```json
+[
+  {}
+]
+```
+
+
+## Create Workspace
+
+```http
+POST /workspaces
+```
 
 
 ## Create Config
 
 ```http
-POST /workspaces/{workspace}/projects/{project}/config
+POST /workspaces/{workspace}/config
 ```
 
 **Path parameters:**
@@ -86,13 +93,12 @@ POST /workspaces/{workspace}/projects/{project}/config
 | Name | Type | Description |
 |------|------|-------------|
 | `workspace` | string |  |
-| `project` | string |  |
 
 
-## Update Project
+## Add Member
 
 ```http
-PATCH /workspaces/{workspace}/projects/{project}
+POST /workspaces/{workspace}/members
 ```
 
 **Path parameters:**
@@ -100,4 +106,3 @@ PATCH /workspaces/{workspace}/projects/{project}
 | Name | Type | Description |
 |------|------|-------------|
 | `workspace` | string |  |
-| `project` | string |  |

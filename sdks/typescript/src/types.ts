@@ -6,26 +6,23 @@ export interface AnclaClientOptions {
   server?: string;
 }
 
-/** Organization resource. */
-export interface Org {
+/** Workspace resource (formerly Organization). */
+export interface Workspace {
   id: string;
   name: string;
   slug: string;
   member_count: number;
   project_count: number;
+  service_count: number;
 }
 
-/** Detailed organization with members. */
-export interface OrgDetail {
-  name: string;
-  slug: string;
-  project_count: number;
-  application_count: number;
-  members: OrgMember[];
+/** Detailed workspace with members. */
+export interface WorkspaceDetail extends Workspace {
+  members: WorkspaceMember[];
 }
 
-/** Organization member. */
-export interface OrgMember {
+/** Workspace member. */
+export interface WorkspaceMember {
   username: string;
   email: string;
   admin: boolean;
@@ -36,49 +33,51 @@ export interface Project {
   id: string;
   name: string;
   slug: string;
-  organization_slug: string;
-  application_count: number;
+  workspace_slug: string;
+  service_count: number;
 }
 
 /** Detailed project resource. */
-export interface ProjectDetail {
-  name: string;
-  slug: string;
-  organization_slug: string;
-  organization_name: string;
-  application_count: number;
+export interface ProjectDetail extends Project {
+  workspace_name: string;
   created: string;
   updated: string;
 }
 
-/** Application summary in list responses. */
-export interface App {
+/** Environment resource. */
+export interface Environment {
+  id: string;
+  name: string;
+  slug: string;
+  service_count: number;
+  created: string;
+}
+
+/** Service resource (formerly Application). */
+export interface Service {
+  id: string;
   name: string;
   slug: string;
   platform: string;
 }
 
-/** Detailed application resource. */
-export interface AppDetail {
-  name: string;
-  slug: string;
-  platform: string;
+/** Detailed service resource. */
+export interface ServiceDetail extends Service {
   github_repository: string;
   auto_deploy_branch: string;
   process_counts: Record<string, number>;
 }
 
-/** Options for updating an application. */
-export interface UpdateAppOptions {
+/** Options for updating a service. */
+export interface UpdateServiceOptions {
   name?: string;
-  platform?: string;
   github_repository?: string;
   auto_deploy_branch?: string;
 }
 
 /** Deploy result returned after triggering a deploy. */
 export interface DeployResult {
-  image_id: string;
+  build_id: string;
 }
 
 /** Scale result is empty on success. */
@@ -95,12 +94,13 @@ export interface ConfigVar {
 
 /** Options for setting a config variable. */
 export interface SetConfigOptions {
+  name: string;
+  value: string;
   secret?: boolean;
-  buildtime?: boolean;
 }
 
-/** Container image resource. */
-export interface Image {
+/** Build resource (formerly Image). */
+export interface Build {
   id: string;
   version: number;
   built: boolean;
@@ -108,34 +108,19 @@ export interface Image {
   created: string;
 }
 
-/** Paginated image list response. */
-export interface ImageList {
-  items: Image[];
+/** Paginated build list response. */
+export interface BuildList {
+  items: Build[];
 }
 
-/** Release resource. */
-export interface Release {
-  id: string;
-  version: number;
-  platform: string;
-  built: boolean;
-  error: boolean;
-  created: string;
-}
-
-/** Paginated release list response. */
-export interface ReleaseList {
-  items: Release[];
-}
-
-/** Release creation result. */
-export interface CreateReleaseResult {
-  release_id: string;
+/** Build creation result. */
+export interface BuildResult {
+  build_id: string;
   version: number;
 }
 
-/** Deployment resource. */
-export interface Deployment {
+/** Deploy resource (collapsed from Release + Deployment). */
+export interface Deploy {
   id: string;
   complete: boolean;
   error: boolean;
@@ -145,16 +130,26 @@ export interface Deployment {
   updated: string;
 }
 
-/** Pipeline status for an application. */
+/** Paginated deploy list response. */
+export interface DeployList {
+  items: Deploy[];
+}
+
+/** Deploy log output. */
+export interface DeployLog {
+  status: string;
+  log_text: string;
+}
+
+/** Pipeline status for a service. */
 export interface PipelineStatus {
   build: { status: string } | null;
-  release: { status: string } | null;
   deploy: { status: string } | null;
 }
 
 /** API error response body shape. */
 export interface ApiErrorBody {
-  status?: number;
+  status: number;
   message?: string;
   detail?: string;
 }

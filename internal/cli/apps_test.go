@@ -11,20 +11,20 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func TestAppsListCmd_ArgValidation(t *testing.T) {
+func TestServicesListCmd_ArgValidation(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    []string
 		wantErr bool
 	}{
 		{"no args", []string{}, true},
-		{"one arg", []string{"my-org/my-project"}, false},
-		{"two args", []string{"my-org/my-project", "extra"}, true},
+		{"one arg", []string{"my-ws/my-proj/staging"}, false},
+		{"two args", []string{"my-ws/my-proj/staging", "extra"}, true},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			argErr := cobra.ExactArgs(1)(appsListCmd, tt.args)
+			argErr := cobra.ExactArgs(1)(servicesListCmd, tt.args)
 			if tt.wantErr && argErr == nil {
 				t.Error("expected arg validation error, got nil")
 			}
@@ -35,7 +35,7 @@ func TestAppsListCmd_ArgValidation(t *testing.T) {
 	}
 }
 
-func TestAppsListCmd_RunE(t *testing.T) {
+func TestServicesListCmd_RunE(t *testing.T) {
 	origCfg := cfg
 	defer func() { cfg = origCfg }()
 
@@ -47,59 +47,59 @@ func TestAppsListCmd_RunE(t *testing.T) {
 
 	cfg = &config.Config{Server: ts.URL}
 
-	cmd := appsListCmd
+	cmd := servicesListCmd
 	cmd.SetOut(&bytes.Buffer{})
 	cmd.SetErr(&bytes.Buffer{})
 
-	err := cmd.RunE(cmd, []string{"my-org/my-project"})
+	err := cmd.RunE(cmd, []string{"my-ws/my-proj/staging"})
 	if err != nil {
 		t.Errorf("unexpected RunE error: %v", err)
 	}
 }
 
-func TestAppsGetCmd_RequiresExactlyOneArg(t *testing.T) {
-	argErr := cobra.ExactArgs(1)(appsGetCmd, []string{})
+func TestServicesGetCmd_RequiresExactlyOneArg(t *testing.T) {
+	argErr := cobra.ExactArgs(1)(servicesGetCmd, []string{})
 	if argErr == nil {
 		t.Error("expected error for zero args, got nil")
 	}
 
-	argErr = cobra.ExactArgs(1)(appsGetCmd, []string{"my-org/my-project/my-app"})
+	argErr = cobra.ExactArgs(1)(servicesGetCmd, []string{"my-ws/my-proj/staging/my-svc"})
 	if argErr != nil {
 		t.Errorf("unexpected error for one arg: %v", argErr)
 	}
 
-	argErr = cobra.ExactArgs(1)(appsGetCmd, []string{"a", "b"})
+	argErr = cobra.ExactArgs(1)(servicesGetCmd, []string{"a", "b"})
 	if argErr == nil {
 		t.Error("expected error for two args, got nil")
 	}
 }
 
-func TestAppsDeployCmd_RequiresExactlyOneArg(t *testing.T) {
-	argErr := cobra.ExactArgs(1)(appsDeployCmd, []string{})
+func TestServicesDeployCmd_RequiresExactlyOneArg(t *testing.T) {
+	argErr := cobra.ExactArgs(1)(servicesDeployCmd, []string{})
 	if argErr == nil {
 		t.Error("expected error for zero args")
 	}
-	argErr = cobra.ExactArgs(1)(appsDeployCmd, []string{"app-id"})
+	argErr = cobra.ExactArgs(1)(servicesDeployCmd, []string{"my-ws/my-proj/staging/my-svc"})
 	if argErr != nil {
 		t.Errorf("unexpected error: %v", argErr)
 	}
 }
 
-func TestAppsScaleCmd_RequiresMinimumTwoArgs(t *testing.T) {
+func TestServicesScaleCmd_RequiresMinimumTwoArgs(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    []string
 		wantErr bool
 	}{
 		{"no args", []string{}, true},
-		{"one arg", []string{"app-id"}, true},
-		{"two args", []string{"app-id", "web=2"}, false},
-		{"three args", []string{"app-id", "web=2", "worker=1"}, false},
+		{"one arg", []string{"my-ws/my-proj/staging/my-svc"}, true},
+		{"two args", []string{"my-ws/my-proj/staging/my-svc", "web=2"}, false},
+		{"three args", []string{"my-ws/my-proj/staging/my-svc", "web=2", "worker=1"}, false},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			argErr := cobra.MinimumNArgs(2)(appsScaleCmd, tt.args)
+			argErr := cobra.MinimumNArgs(2)(servicesScaleCmd, tt.args)
 			if tt.wantErr && argErr == nil {
 				t.Error("expected arg validation error, got nil")
 			}
@@ -110,7 +110,7 @@ func TestAppsScaleCmd_RequiresMinimumTwoArgs(t *testing.T) {
 	}
 }
 
-func TestAppsScaleCmd_InvalidScaleFormat(t *testing.T) {
+func TestServicesScaleCmd_InvalidScaleFormat(t *testing.T) {
 	origCfg := cfg
 	defer func() { cfg = origCfg }()
 
@@ -125,13 +125,13 @@ func TestAppsScaleCmd_InvalidScaleFormat(t *testing.T) {
 		name string
 		args []string
 	}{
-		{"missing equals", []string{"app-id", "web2"}},
-		{"non-numeric count", []string{"app-id", "web=abc"}},
+		{"missing equals", []string{"my-ws/my-proj/staging/my-svc", "web2"}},
+		{"non-numeric count", []string{"my-ws/my-proj/staging/my-svc", "web=abc"}},
 	}
 
 	for _, tt := range badFormats {
 		t.Run(tt.name, func(t *testing.T) {
-			cmd := appsScaleCmd
+			cmd := servicesScaleCmd
 			cmd.SetOut(&bytes.Buffer{})
 			cmd.SetErr(&bytes.Buffer{})
 			err := cmd.RunE(cmd, tt.args)
@@ -142,7 +142,7 @@ func TestAppsScaleCmd_InvalidScaleFormat(t *testing.T) {
 	}
 }
 
-func TestAppsListCmd_ParsesServerResponse(t *testing.T) {
+func TestServicesListCmd_ParsesServerResponse(t *testing.T) {
 	origCfg := cfg
 	origFormat := outputFormat
 	origFlag := jsonFlag
@@ -152,14 +152,14 @@ func TestAppsListCmd_ParsesServerResponse(t *testing.T) {
 		jsonFlag = origFlag
 	}()
 
-	apps := []map[string]string{
-		{"name": "My App", "slug": "my-app", "platform": "go"},
-		{"name": "Other App", "slug": "other-app", "platform": "python"},
+	svcs := []map[string]string{
+		{"name": "My Svc", "slug": "my-svc", "platform": "go"},
+		{"name": "Other Svc", "slug": "other-svc", "platform": "python"},
 	}
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(apps)
+		json.NewEncoder(w).Encode(svcs)
 	}))
 	defer ts.Close()
 
@@ -167,17 +167,17 @@ func TestAppsListCmd_ParsesServerResponse(t *testing.T) {
 	outputFormat = "table"
 	jsonFlag = false
 
-	cmd := appsListCmd
+	cmd := servicesListCmd
 	cmd.SetOut(&bytes.Buffer{})
 	cmd.SetErr(&bytes.Buffer{})
 
-	err := cmd.RunE(cmd, []string{"my-org/my-project"})
+	err := cmd.RunE(cmd, []string{"my-ws/my-proj/staging"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
 
-func TestAppsGetCmd_ParsesServerResponse(t *testing.T) {
+func TestServicesGetCmd_ParsesServerResponse(t *testing.T) {
 	origCfg := cfg
 	origFormat := outputFormat
 	origFlag := jsonFlag
@@ -187,9 +187,9 @@ func TestAppsGetCmd_ParsesServerResponse(t *testing.T) {
 		jsonFlag = origFlag
 	}()
 
-	app := map[string]any{
-		"name":               "My App",
-		"slug":               "my-app",
+	svc := map[string]any{
+		"name":               "My Svc",
+		"slug":               "my-svc",
 		"platform":           "go",
 		"github_repository":  "org/repo",
 		"auto_deploy_branch": "main",
@@ -198,7 +198,7 @@ func TestAppsGetCmd_ParsesServerResponse(t *testing.T) {
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(app)
+		json.NewEncoder(w).Encode(svc)
 	}))
 	defer ts.Close()
 
@@ -206,17 +206,17 @@ func TestAppsGetCmd_ParsesServerResponse(t *testing.T) {
 	outputFormat = "table"
 	jsonFlag = false
 
-	cmd := appsGetCmd
+	cmd := servicesGetCmd
 	cmd.SetOut(&bytes.Buffer{})
 	cmd.SetErr(&bytes.Buffer{})
 
-	err := cmd.RunE(cmd, []string{"my-org/my-project/my-app"})
+	err := cmd.RunE(cmd, []string{"my-ws/my-proj/staging/my-svc"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
 
-func TestAppsListCmd_HTTPError(t *testing.T) {
+func TestServicesListCmd_HTTPError(t *testing.T) {
 	origCfg := cfg
 	defer func() { cfg = origCfg }()
 
@@ -227,11 +227,11 @@ func TestAppsListCmd_HTTPError(t *testing.T) {
 
 	cfg = &config.Config{Server: ts.URL}
 
-	cmd := appsListCmd
+	cmd := servicesListCmd
 	cmd.SetOut(&bytes.Buffer{})
 	cmd.SetErr(&bytes.Buffer{})
 
-	err := cmd.RunE(cmd, []string{"my-org/my-project"})
+	err := cmd.RunE(cmd, []string{"my-ws/my-proj/staging"})
 	if err == nil {
 		t.Fatal("expected error for 401 response, got nil")
 	}
@@ -240,12 +240,12 @@ func TestAppsListCmd_HTTPError(t *testing.T) {
 	}
 }
 
-func TestAppsStatusCmd_RequiresExactlyOneArg(t *testing.T) {
-	argErr := cobra.ExactArgs(1)(appsStatusCmd, []string{})
+func TestServicesStatusCmd_RequiresExactlyOneArg(t *testing.T) {
+	argErr := cobra.ExactArgs(1)(servicesStatusCmd, []string{})
 	if argErr == nil {
 		t.Error("expected error for zero args")
 	}
-	argErr = cobra.ExactArgs(1)(appsStatusCmd, []string{"app-id"})
+	argErr = cobra.ExactArgs(1)(servicesStatusCmd, []string{"my-ws/my-proj/staging/my-svc"})
 	if argErr != nil {
 		t.Errorf("unexpected error: %v", argErr)
 	}

@@ -132,7 +132,7 @@ func TestLoad_LocalConfigOverridesGlobal(t *testing.T) {
 	projectDir := filepath.Join(tmpHome, "projects", "myapp")
 	localConfigDir := filepath.Join(projectDir, ".ancla")
 	os.MkdirAll(localConfigDir, 0o755)
-	localContent := []byte("org: my-org\nproject: my-project\napp: my-app\n")
+	localContent := []byte("workspace: my-ws\nproject: my-project\nenv: staging\nservice: my-svc\n")
 	os.WriteFile(filepath.Join(localConfigDir, "config.yaml"), localContent, 0o644)
 
 	origDir, _ := os.Getwd()
@@ -152,14 +152,17 @@ func TestLoad_LocalConfigOverridesGlobal(t *testing.T) {
 		t.Errorf("APIKey = %q, want %q", cfg.APIKey, "global-key")
 	}
 	// Local values should be merged in.
-	if cfg.Org != "my-org" {
-		t.Errorf("Org = %q, want %q", cfg.Org, "my-org")
+	if cfg.Workspace != "my-ws" {
+		t.Errorf("Workspace = %q, want %q", cfg.Workspace, "my-ws")
 	}
 	if cfg.Project != "my-project" {
 		t.Errorf("Project = %q, want %q", cfg.Project, "my-project")
 	}
-	if cfg.App != "my-app" {
-		t.Errorf("App = %q, want %q", cfg.App, "my-app")
+	if cfg.Env != "staging" {
+		t.Errorf("Env = %q, want %q", cfg.Env, "staging")
+	}
+	if cfg.Service != "my-svc" {
+		t.Errorf("Service = %q, want %q", cfg.Service, "my-svc")
 	}
 }
 
@@ -169,7 +172,7 @@ func TestFindLocalConfigDir_WalksUp(t *testing.T) {
 	// Create .ancla/ at top level.
 	anclaDir := filepath.Join(tmpDir, ".ancla")
 	os.MkdirAll(anclaDir, 0o755)
-	os.WriteFile(filepath.Join(anclaDir, "config.yaml"), []byte("org: test\n"), 0o644)
+	os.WriteFile(filepath.Join(anclaDir, "config.yaml"), []byte("workspace: test\n"), 0o644)
 
 	// Create a nested subdirectory.
 	nested := filepath.Join(tmpDir, "a", "b", "c")
@@ -188,18 +191,12 @@ func TestFindLocalConfigDir_WalksUp(t *testing.T) {
 func TestFindLocalConfigDir_NotFound(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	// No .ancla/ anywhere under tmpDir. Chdir into it so walk-up
-	// will not find any .ancla directory before reaching root.
 	origDir, _ := os.Getwd()
 	os.Chdir(tmpDir)
 	defer os.Chdir(origDir)
 
 	got := findLocalConfigDir()
-	// It may or may not find one depending on real filesystem; just
-	// verify it doesn't find one inside our tmpDir.
 	if got != "" {
-		// If it found something outside tmpDir, that's fine (real system config).
-		// But it should not have found one in tmpDir.
 		rel, err := filepath.Rel(tmpDir, got)
 		if err == nil && !filepath.IsAbs(rel) && rel[0] != '.' {
 			t.Errorf("found .ancla in tmpDir unexpectedly: %q", got)
@@ -303,9 +300,10 @@ func TestSaveLocal_CreatesLocalConfig(t *testing.T) {
 	defer os.Chdir(origDir)
 
 	cfg := &Config{
-		Org:     "my-org",
-		Project: "my-project",
-		App:     "my-app",
+		Workspace: "my-ws",
+		Project:   "my-project",
+		Env:       "staging",
+		Service:   "my-svc",
 	}
 
 	err := SaveLocal(cfg)
@@ -328,7 +326,7 @@ func TestRemoveLocal(t *testing.T) {
 	defer os.Chdir(origDir)
 
 	// Create local config first.
-	cfg := &Config{Org: "test-org"}
+	cfg := &Config{Workspace: "test-ws"}
 	SaveLocal(cfg)
 
 	err := RemoveLocal()
@@ -363,16 +361,75 @@ func TestConfig_IsLinked(t *testing.T) {
 		want bool
 	}{
 		{"all empty", Config{}, false},
-		{"org only", Config{Org: "test"}, true},
+		{"workspace only", Config{Workspace: "test"}, true},
 		{"project only", Config{Project: "test"}, true},
-		{"app only", Config{App: "test"}, true},
-		{"all set", Config{Org: "o", Project: "p", App: "a"}, true},
+		{"env only", Config{Env: "test"}, true},
+		{"service only", Config{Service: "test"}, true},
+		{"all set", Config{Workspace: "w", Project: "p", Env: "e", Service: "s"}, true},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := tt.cfg.IsLinked(); got != tt.want {
 				t.Errorf("IsLinked() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestConfig_ServicePath(t *testing.T) {
+	tests := []struct {
+		name string
+		cfg  Config
+		want string
+	}{
+		{"all set", Config{Workspace: "w", Project: "p", Env: "e", Service: "s"}, "w/p/e/s"},
+		{"ws only", Config{Workspace: "w"}, "w"},
+		{"empty", Config{}, ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.cfg.ServicePath(); got != tt.want {
+				t.Errorf("ServicePath() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestResolveServicePath(t *testing.T) {
+	tests := []struct {
+		name                               string
+		arg                                string
+		cfg                                *Config
+		wantWs, wantProj, wantEnv, wantSvc string
+	}{
+		{
+			name:   "arg overrides all",
+			arg:    "a/b/c/d",
+			cfg:    &Config{Workspace: "x", Project: "y", Env: "z", Service: "w"},
+			wantWs: "a", wantProj: "b", wantEnv: "c", wantSvc: "d",
+		},
+		{
+			name:   "partial arg with fallback",
+			arg:    "a/b",
+			cfg:    &Config{Workspace: "x", Project: "y", Env: "staging", Service: "svc"},
+			wantWs: "a", wantProj: "b", wantEnv: "staging", wantSvc: "svc",
+		},
+		{
+			name:   "empty arg uses config",
+			arg:    "",
+			cfg:    &Config{Workspace: "x", Project: "y", Env: "z", Service: "w"},
+			wantWs: "x", wantProj: "y", wantEnv: "z", wantSvc: "w",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ws, proj, env, svc, err := ResolveServicePath(tt.arg, tt.cfg)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if ws != tt.wantWs || proj != tt.wantProj || env != tt.wantEnv || svc != tt.wantSvc {
+				t.Errorf("got (%q,%q,%q,%q), want (%q,%q,%q,%q)", ws, proj, env, svc, tt.wantWs, tt.wantProj, tt.wantEnv, tt.wantSvc)
 			}
 		})
 	}

@@ -15,21 +15,22 @@ func init() {
 
 var logsCmd = &cobra.Command{
 	Use:   "logs",
-	Short: "Show logs for the linked application's latest deployment",
-	Long: `Show deployment logs for the currently linked application.
+	Short: "Show logs for the linked service's latest deployment",
+	Long: `Show deployment logs for the currently linked service.
 
-Requires a fully linked directory (org/project/app). Fetches the latest
-deployment and displays its log output. Use --follow to stream updates.`,
+Requires a fully linked directory (workspace/project/env/service). Fetches
+the latest deployment and displays its log output. Use --follow to stream
+updates.`,
 	Example: "  ancla logs\n  ancla logs -f",
 	GroupID: "workflow",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if cfg.Org == "" || cfg.Project == "" || cfg.App == "" {
-			return fmt.Errorf("not fully linked — run `ancla link <org>/<project>/<app>` first")
+		if cfg.Workspace == "" || cfg.Project == "" || cfg.Env == "" || cfg.Service == "" {
+			return fmt.Errorf("not fully linked — run `ancla link <ws>/<proj>/<env>/<svc>` first")
 		}
 
-		// Get app pipeline status to find latest deployment
-		appPath := cfg.Org + "/" + cfg.Project + "/" + cfg.App
-		req, _ := http.NewRequest("GET", apiURL("/applications/"+appPath+"/pipeline-status"), nil)
+		// Get service pipeline status to find latest deployment
+		svcPath := "/workspaces/" + cfg.Workspace + "/projects/" + cfg.Project + "/envs/" + cfg.Env + "/services/" + cfg.Service
+		req, _ := http.NewRequest("GET", apiURL(svcPath+"/pipeline-status"), nil)
 		body, err := doRequest(req)
 		if err != nil {
 			return err
@@ -52,7 +53,7 @@ deployment and displays its log output. Use --follow to stream updates.`,
 		deployID := status.Deploy.ID
 
 		// Fetch deployment logs
-		logReq, _ := http.NewRequest("GET", apiURL("/deployments/"+deployID+"/log"), nil)
+		logReq, _ := http.NewRequest("GET", apiURL("/deploys/"+deployID+"/log"), nil)
 		logBody, err := doRequest(logReq)
 		if err != nil {
 			return err
@@ -77,7 +78,7 @@ deployment and displays its log output. Use --follow to stream updates.`,
 
 		follow, _ := cmd.Flags().GetBool("follow")
 		if follow {
-			return followDeploymentLog(deployID)
+			return followDeployLog(deployID)
 		}
 		return nil
 	},

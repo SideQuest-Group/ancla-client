@@ -3,7 +3,7 @@ title: Remote Access
 description: SSH into containers, open database shells, and manage cache services.
 ---
 
-These commands give you direct access to running containers and their attached services. All of them use the linked app context or accept an explicit `org/project/app` argument.
+These commands give you direct access to running containers and their attached services. All of them use the linked service context or accept an explicit `workspace/project/env/service` argument.
 
 ## SSH
 
@@ -19,10 +19,10 @@ Connect to a specific process type (defaults to `web`):
 ancla ssh --process worker
 ```
 
-With an explicit app path:
+With an explicit service path:
 
 ```bash
-ancla ssh my-org/my-project/my-app
+ancla ssh my-ws/my-project/production/my-service
 ```
 
 The CLI requests ephemeral credentials from the Ancla API and launches `ssh` with them. You need OpenSSH installed locally. No SSH keys to manage; the platform handles authentication.
@@ -46,7 +46,7 @@ Default process type is `web`. Default command is `/bin/sh`.
 
 ## Database shell
 
-Connect to your app's primary database:
+Connect to your service's primary database:
 
 ```bash
 ancla dbshell
@@ -61,7 +61,7 @@ The CLI detects the database engine and launches the right client:
 Credentials come from the platform. You need `psql` or `mysql` installed locally.
 
 ```bash
-ancla dbshell my-org/my-project/my-app
+ancla dbshell my-ws/my-project/production/my-service
 ```
 
 With `--json`, the command prints connection details without opening a shell (passwords omitted):
@@ -75,8 +75,8 @@ ancla dbshell --json
   "engine": "postgresql",
   "host": "db-abc123.ancla.internal",
   "port": 5432,
-  "name": "myapp_production",
-  "user": "myapp"
+  "name": "myservice_production",
+  "user": "myservice"
 }
 ```
 

@@ -11,64 +11,69 @@ import (
 	"github.com/sidequest-labs/terraform-provider-ancla/internal/client"
 )
 
-var _ datasource.DataSource = &AppDataSource{}
+var _ datasource.DataSource = &ServiceDataSource{}
 
-// AppDataSource reads an Ancla application.
-type AppDataSource struct {
+// ServiceDataSource reads an Ancla service.
+type ServiceDataSource struct {
 	client *client.Client
 }
 
-// AppDataSourceModel maps the data source schema data.
-type AppDataSourceModel struct {
+// ServiceDataSourceModel maps the data source schema data.
+type ServiceDataSourceModel struct {
 	ID               types.String `tfsdk:"id"`
 	Name             types.String `tfsdk:"name"`
 	Slug             types.String `tfsdk:"slug"`
-	OrganizationSlug types.String `tfsdk:"organization_slug"`
+	WorkspaceSlug    types.String `tfsdk:"workspace_slug"`
 	ProjectSlug      types.String `tfsdk:"project_slug"`
+	EnvSlug          types.String `tfsdk:"env_slug"`
 	Platform         types.String `tfsdk:"platform"`
 	GithubRepository types.String `tfsdk:"github_repository"`
 	AutoDeployBranch types.String `tfsdk:"auto_deploy_branch"`
 	ProcessCounts    types.Map    `tfsdk:"process_counts"`
 }
 
-func NewAppDataSource() datasource.DataSource {
-	return &AppDataSource{}
+func NewServiceDataSource() datasource.DataSource {
+	return &ServiceDataSource{}
 }
 
-func (d *AppDataSource) Metadata(_ context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
-	resp.TypeName = req.ProviderTypeName + "_app"
+func (d *ServiceDataSource) Metadata(_ context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
+	resp.TypeName = req.ProviderTypeName + "_service"
 }
 
-func (d *AppDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
+func (d *ServiceDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Reads an Ancla application by organization, project, and app slug.",
+		Description: "Reads an Ancla service by workspace, project, environment, and service slug.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
-				Description: "The unique identifier of the application.",
+				Description: "The unique identifier of the service.",
 				Computed:    true,
 			},
 			"name": schema.StringAttribute{
-				Description: "The display name of the application.",
+				Description: "The display name of the service.",
 				Computed:    true,
 			},
 			"slug": schema.StringAttribute{
-				Description: "The URL-friendly slug of the application.",
+				Description: "The URL-friendly slug of the service.",
 				Required:    true,
 			},
-			"organization_slug": schema.StringAttribute{
-				Description: "The slug of the organization.",
+			"workspace_slug": schema.StringAttribute{
+				Description: "The slug of the workspace.",
 				Required:    true,
 			},
 			"project_slug": schema.StringAttribute{
 				Description: "The slug of the project.",
 				Required:    true,
 			},
+			"env_slug": schema.StringAttribute{
+				Description: "The slug of the environment.",
+				Required:    true,
+			},
 			"platform": schema.StringAttribute{
-				Description: "The platform type of the application.",
+				Description: "The platform type of the service.",
 				Computed:    true,
 			},
 			"github_repository": schema.StringAttribute{
-				Description: "The GitHub repository linked to this application.",
+				Description: "The GitHub repository linked to this service.",
 				Computed:    true,
 			},
 			"auto_deploy_branch": schema.StringAttribute{
@@ -84,7 +89,7 @@ func (d *AppDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, re
 	}
 }
 
-func (d *AppDataSource) Configure(_ context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
+func (d *ServiceDataSource) Configure(_ context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
 	if req.ProviderData == nil {
 		return
 	}
@@ -97,34 +102,35 @@ func (d *AppDataSource) Configure(_ context.Context, req datasource.ConfigureReq
 	d.client = c
 }
 
-func (d *AppDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
-	var config AppDataSourceModel
+func (d *ServiceDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
+	var config ServiceDataSourceModel
 	diags := req.Config.Get(ctx, &config)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	app, err := d.client.GetApp(
-		config.OrganizationSlug.ValueString(),
+	svc, err := d.client.GetService(
+		config.WorkspaceSlug.ValueString(),
 		config.ProjectSlug.ValueString(),
+		config.EnvSlug.ValueString(),
 		config.Slug.ValueString(),
 	)
 	if err != nil {
-		resp.Diagnostics.AddError("Error reading application", err.Error())
+		resp.Diagnostics.AddError("Error reading service", err.Error())
 		return
 	}
 
-	config.ID = types.StringValue(app.ID)
-	config.Name = types.StringValue(app.Name)
-	config.Slug = types.StringValue(app.Slug)
-	config.Platform = types.StringValue(app.Platform)
-	config.GithubRepository = types.StringValue(app.GithubRepository)
-	config.AutoDeployBranch = types.StringValue(app.AutoDeployBranch)
+	config.ID = types.StringValue(svc.ID)
+	config.Name = types.StringValue(svc.Name)
+	config.Slug = types.StringValue(svc.Slug)
+	config.Platform = types.StringValue(svc.Platform)
+	config.GithubRepository = types.StringValue(svc.GithubRepository)
+	config.AutoDeployBranch = types.StringValue(svc.AutoDeployBranch)
 
-	if len(app.ProcessCounts) > 0 {
-		elems := make(map[string]types.Int64, len(app.ProcessCounts))
-		for k, v := range app.ProcessCounts {
+	if len(svc.ProcessCounts) > 0 {
+		elems := make(map[string]types.Int64, len(svc.ProcessCounts))
+		for k, v := range svc.ProcessCounts {
 			elems[k] = types.Int64Value(int64(v))
 		}
 		mapVal, diags := types.MapValueFrom(ctx, types.Int64Type, elems)

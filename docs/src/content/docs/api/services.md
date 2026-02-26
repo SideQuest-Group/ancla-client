@@ -1,151 +1,278 @@
 ---
-title: Services
-description: API reference for managing services within environments.
+title: "Services"
+description: API reference for services endpoints.
 ---
 
-Services are the deployable units within an environment. A service maps to a single container image, with its own scaling, health checks, and deployment lifecycle.
+<!-- Auto-generated from openapi.json — do not edit manually -->
 
-## List services
+## List Services
 
 ```http
-GET /orgs/{org}/projects/{project}/envs/{env}/services/
+GET /workspaces/{workspace}/projects/{project}/envs/{env}/services
 ```
 
-### Response
+**Path parameters:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `workspace` | string |  |
+| `project` | string |  |
+| `env` | string |  |
+
+**Response:**
 
 ```json
 [
-  {
-    "id": "uuid",
-    "name": "API",
-    "slug": "api",
-    "platform": "wind",
-    "github_repository": "acme/api",
-    "process_counts": {"web": 2, "worker": 1}
-  }
+  {}
 ]
 ```
 
-## Create a service
+
+## Get Service
 
 ```http
-POST /orgs/{org}/projects/{project}/envs/{env}/services/
+GET /workspaces/{workspace}/projects/{project}/envs/{env}/services/{svc}
 ```
 
-### Request body
+**Path parameters:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `workspace` | string |  |
+| `project` | string |  |
+| `env` | string |  |
+| `svc` | string |  |
+
+
+## List Builds
+
+```http
+GET /workspaces/{workspace}/projects/{project}/envs/{env}/services/{svc}/builds
+```
+
+**Path parameters:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `workspace` | string |  |
+| `project` | string |  |
+| `env` | string |  |
+| `svc` | string |  |
+
+**Query parameters:**
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| `page` | integer | No |  |
+| `per_page` | integer | No |  |
+
+
+## Get Build
+
+```http
+GET /workspaces/{workspace}/projects/{project}/envs/{env}/services/{svc}/builds/{version}
+```
+
+**Path parameters:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `workspace` | string |  |
+| `project` | string |  |
+| `env` | string |  |
+| `svc` | string |  |
+| `version` | integer |  |
+
+
+## Get Build Log
+
+```http
+GET /workspaces/{workspace}/projects/{project}/envs/{env}/services/{svc}/builds/{version}/log
+```
+
+**Path parameters:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `workspace` | string |  |
+| `project` | string |  |
+| `env` | string |  |
+| `svc` | string |  |
+| `version` | integer |  |
+
+
+## List Config
+
+```http
+GET /workspaces/{workspace}/projects/{project}/envs/{env}/services/{svc}/config
+```
+
+**Path parameters:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `workspace` | string |  |
+| `project` | string |  |
+| `env` | string |  |
+| `svc` | string |  |
+
+**Response:**
 
 ```json
-{
-  "name": "API",
-  "platform": "wind",
-  "github_repository": "acme/api",
-  "health_check_path": "/_health/"
-}
+[
+  {}
+]
 ```
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `name` | string | yes | Service name |
-| `platform` | string | yes | One of: `wind`, `steam`, `diesel`, `stirling`, `nuclear`, `electric` |
-| `github_repository` | string | no | GitHub repo (owner/name) |
-| `health_check_path` | string | no | Path for health checks. Defaults to `/_health/`. |
-| `auto_deploy_branch` | string | no | Branch for auto-deploy |
-| `deployment_timeout` | int | no | Timeout in seconds. Defaults to 180. |
 
-## Get a service
+## Get Resolved Config
 
 ```http
-GET /orgs/{org}/projects/{project}/envs/{env}/services/{svc}
+GET /workspaces/{workspace}/projects/{project}/envs/{env}/services/{svc}/config/resolved
 ```
 
-## Update a service
+**Path parameters:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `workspace` | string |  |
+| `project` | string |  |
+| `env` | string |  |
+| `svc` | string |  |
+
+
+## List Deploys
 
 ```http
-PATCH /orgs/{org}/projects/{project}/envs/{env}/services/{svc}
+GET /workspaces/{workspace}/projects/{project}/envs/{env}/services/{svc}/deploys
 ```
 
-Accepts the same fields as create (all optional).
+**Path parameters:**
 
-## Service configuration
+| Name | Type | Description |
+|------|------|-------------|
+| `workspace` | string |  |
+| `project` | string |  |
+| `env` | string |  |
+| `svc` | string |  |
 
-### List config
+**Response:**
+
+```json
+[
+  {}
+]
+```
+
+
+## Get Deploy
 
 ```http
-GET /orgs/{org}/projects/{project}/envs/{env}/services/{svc}/config
+GET /workspaces/{workspace}/projects/{project}/envs/{env}/services/{svc}/deploys/{deploy_id}
 ```
 
-### Get resolved config
+**Path parameters:**
 
-Returns the fully merged configuration, combining org, project, environment, and service-level variables:
+| Name | Type | Description |
+|------|------|-------------|
+| `workspace` | string |  |
+| `project` | string |  |
+| `env` | string |  |
+| `svc` | string |  |
+| `deploy_id` | string |  |
+
+
+## Get Deploy Log
 
 ```http
-GET /orgs/{org}/projects/{project}/envs/{env}/services/{svc}/config/resolved
+GET /workspaces/{workspace}/projects/{project}/envs/{env}/services/{svc}/deploys/{deploy_id}/log
 ```
 
-### Set a config variable
+**Path parameters:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `workspace` | string |  |
+| `project` | string |  |
+| `env` | string |  |
+| `svc` | string |  |
+| `deploy_id` | string |  |
+
+
+## Create Service
 
 ```http
-POST /orgs/{org}/projects/{project}/envs/{env}/services/{svc}/config
+POST /workspaces/{workspace}/projects/{project}/envs/{env}/services
 ```
 
-## Images
+**Path parameters:**
 
-### List images
+| Name | Type | Description |
+|------|------|-------------|
+| `workspace` | string |  |
+| `project` | string |  |
+| `env` | string |  |
+
+
+## Trigger Build
 
 ```http
-GET /orgs/{org}/projects/{project}/envs/{env}/services/{svc}/images
+POST /workspaces/{workspace}/projects/{project}/envs/{env}/services/{svc}/builds/trigger
 ```
 
-Supports pagination via `page` and `per_page` query parameters.
+**Path parameters:**
 
-### Get an image by version
+| Name | Type | Description |
+|------|------|-------------|
+| `workspace` | string |  |
+| `project` | string |  |
+| `env` | string |  |
+| `svc` | string |  |
+
+
+## Create Config
 
 ```http
-GET /orgs/{org}/projects/{project}/envs/{env}/services/{svc}/images/{version}
+POST /workspaces/{workspace}/projects/{project}/envs/{env}/services/{svc}/config
 ```
 
-The `{version}` parameter is the image version number (integer), not a UUID.
+**Path parameters:**
 
-### Get build log
+| Name | Type | Description |
+|------|------|-------------|
+| `workspace` | string |  |
+| `project` | string |  |
+| `env` | string |  |
+| `svc` | string |  |
+
+
+## Deploy Service
 
 ```http
-GET /orgs/{org}/projects/{project}/envs/{env}/services/{svc}/images/{version}/log
+POST /workspaces/{workspace}/projects/{project}/envs/{env}/services/{svc}/deploy
 ```
 
-### Trigger a build
+**Path parameters:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `workspace` | string |  |
+| `project` | string |  |
+| `env` | string |  |
+| `svc` | string |  |
+
+
+## Update Service
 
 ```http
-POST /orgs/{org}/projects/{project}/envs/{env}/services/{svc}/images/build
+PATCH /workspaces/{workspace}/projects/{project}/envs/{env}/services/{svc}
 ```
 
-Enqueues a new image build. Returns the image ID and version.
+**Path parameters:**
 
-## Releases
-
-### List releases
-
-```http
-GET /orgs/{org}/projects/{project}/envs/{env}/services/{svc}/releases
-```
-
-Returns the 50 most recent releases.
-
-### Get a release by version
-
-```http
-GET /orgs/{org}/projects/{project}/envs/{env}/services/{svc}/releases/{version}
-```
-
-### Get release build log
-
-```http
-GET /orgs/{org}/projects/{project}/envs/{env}/services/{svc}/releases/{version}/log
-```
-
-## Deploy a service
-
-```http
-POST /orgs/{org}/projects/{project}/envs/{env}/services/{svc}/deploy
-```
-
-Triggers a full deploy: creates a new release from the latest image and deploys it. Returns the release and deployment IDs.
+| Name | Type | Description |
+|------|------|-------------|
+| `workspace` | string |  |
+| `project` | string |  |
+| `env` | string |  |
+| `svc` | string |  |

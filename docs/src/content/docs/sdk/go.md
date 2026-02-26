@@ -33,117 +33,117 @@ The client wraps the provided `http.Client`'s transport to inject the `X-API-Key
 
 All methods take a `context.Context` as their first argument.
 
-## Organizations
+## Workspaces
 
 ```go
 ctx := context.Background()
 
-orgs, err := client.ListOrgs(ctx)
+workspaces, err := client.ListWorkspaces(ctx)
 
-org, err := client.GetOrg(ctx, "my-org")
+ws, err := client.GetWorkspace(ctx, "my-ws")
 
-newOrg, err := client.CreateOrg(ctx, "New Org")
+newWS, err := client.CreateWorkspace(ctx, "New Workspace")
 
-updated, err := client.UpdateOrg(ctx, "my-org", "Renamed Org")
+updated, err := client.UpdateWorkspace(ctx, "my-ws", "Renamed Workspace")
 
-err = client.DeleteOrg(ctx, "old-org")
+err = client.DeleteWorkspace(ctx, "old-ws")
 ```
 
 ## Projects
 
 ```go
-projects, err := client.ListProjects(ctx, "my-org")
+projects, err := client.ListProjects(ctx, "my-ws")
 
-project, err := client.GetProject(ctx, "my-org", "my-project")
+project, err := client.GetProject(ctx, "my-ws", "my-project")
 
-newProject, err := client.CreateProject(ctx, "my-org", "New Project")
+newProject, err := client.CreateProject(ctx, "my-ws", "New Project")
 
-updated, err := client.UpdateProject(ctx, "my-org", "my-project", "Renamed")
+updated, err := client.UpdateProject(ctx, "my-ws", "my-project", "Renamed")
 
-err = client.DeleteProject(ctx, "my-org", "old-project")
+err = client.DeleteProject(ctx, "my-ws", "old-project")
 ```
 
-## Applications
+## Environments
 
 ```go
-apps, err := client.ListApps(ctx, "my-org", "my-project")
+envs, err := client.ListEnvironments(ctx, "my-ws", "my-project")
 
-app, err := client.GetApp(ctx, "my-org", "my-project", "api-service")
+env, err := client.GetEnvironment(ctx, "my-ws", "my-project", "production")
 
-newApp, err := client.CreateApp(ctx, "my-org", "my-project", "Worker", "docker")
+newEnv, err := client.CreateEnvironment(ctx, "my-ws", "my-project", "staging")
 
-updated, err := client.UpdateApp(ctx, "my-org", "my-project", "api-service", ancla.UpdateAppOptions{
+err = client.DeleteEnvironment(ctx, "my-ws", "my-project", "old-env")
+```
+
+## Services
+
+```go
+services, err := client.ListServices(ctx, "my-ws", "my-project", "production")
+
+svc, err := client.GetService(ctx, "my-ws", "my-project", "production", "api")
+
+newSvc, err := client.CreateService(ctx, "my-ws", "my-project", "production", "Worker", "docker")
+
+updated, err := client.UpdateService(ctx, "my-ws", "my-project", "production", "api", ancla.UpdateServiceOptions{
     Name: ancla.StringPtr("Renamed"),
 })
 
-err = client.DeleteApp(ctx, "my-org", "my-project", "old-app")
+err = client.DeleteService(ctx, "my-ws", "my-project", "production", "old-svc")
 ```
 
 ### Deploy and scale
 
 ```go
-result, err := client.DeployApp(ctx, "app-uuid")
-fmt.Println(result.ImageID)
+result, err := client.DeployService(ctx, "svc-uuid")
+fmt.Println(result.BuildID)
 
-err = client.ScaleApp(ctx, "app-uuid", map[string]int{
+err = client.ScaleService(ctx, "svc-uuid", map[string]int{
     "web":    2,
     "worker": 1,
 })
 
-status, err := client.GetAppStatus(ctx, "app-uuid")
+status, err := client.GetServiceStatus(ctx, "svc-uuid")
 fmt.Println(status.Build.Status)  // "complete"
 ```
 
-## Configuration
+## Config vars
 
 ```go
-vars, err := client.ListConfig(ctx, "app-uuid")
+vars, err := client.ListConfigVars(ctx, "svc-uuid")
 
-v, err := client.GetConfig(ctx, "app-uuid", "config-uuid")
+v, err := client.GetConfigVar(ctx, "svc-uuid", "config-uuid")
 
-err = client.SetConfig(ctx, "app-uuid", ancla.SetConfigRequest{
+err = client.SetConfigVar(ctx, "svc-uuid", ancla.SetConfigVarRequest{
     Name:   "DATABASE_URL",
     Value:  "postgres://localhost/mydb",
     Secret: true,
 })
 
-err = client.DeleteConfig(ctx, "app-uuid", "config-uuid")
+err = client.DeleteConfigVar(ctx, "svc-uuid", "config-uuid")
 ```
 
-## Images
+## Builds
 
 ```go
-images, err := client.ListImages(ctx, "app-uuid")
-// images.Items is []Image
+builds, err := client.ListBuilds(ctx, "svc-uuid")
+// builds.Items is []Build
 
-image, err := client.GetImage(ctx, "image-uuid")
+build, err := client.GetBuild(ctx, "build-uuid")
 
-buildResult, err := client.BuildImage(ctx, "app-uuid")
-fmt.Println(buildResult.ImageID, buildResult.Version)
+buildResult, err := client.CreateBuild(ctx, "svc-uuid")
+fmt.Println(buildResult.BuildID, buildResult.Version)
 ```
 
-## Releases
+## Deploys
 
 ```go
-releases, err := client.ListReleases(ctx, "app-uuid")
-// releases.Items is []Release
+deploys, err := client.ListDeploys(ctx, "svc-uuid")
+// deploys.Items is []Deploy
 
-release, err := client.GetRelease(ctx, "release-uuid")
+deploy, err := client.GetDeploy(ctx, "deploy-uuid")
+fmt.Println(deploy.Complete, deploy.Error)
 
-result, err := client.CreateRelease(ctx, "app-uuid")
-fmt.Println(result.ReleaseID, result.Version)
-
-deployResult, err := client.DeployRelease(ctx, "release-uuid")
-fmt.Println(deployResult.DeploymentID)
-```
-
-## Deployments
-
-```go
-deployment, err := client.GetDeployment(ctx, "deployment-uuid")
-fmt.Println(deployment.Complete, deployment.Error)
-
-log, err := client.GetDeploymentLog(ctx, "deployment-uuid")
+log, err := client.GetDeployLog(ctx, "deploy-uuid")
 fmt.Println(log.LogText)
 ```
 
@@ -152,7 +152,7 @@ fmt.Println(log.LogText)
 API errors are returned as `*ancla.APIError`:
 
 ```go
-org, err := client.GetOrg(ctx, "nonexistent")
+ws, err := client.GetWorkspace(ctx, "nonexistent")
 if err != nil {
     var apiErr *ancla.APIError
     if errors.As(err, &apiErr) {
@@ -179,8 +179,8 @@ if ancla.IsForbidden(err) {
 
 All request/response types are exported from the package root:
 
-**Resources:** `Org`, `OrgMember`, `Project`, `App`, `ConfigVar`, `Image`, `ImageList`, `ImageLog`, `Release`, `ReleaseList`, `Deployment`, `DeploymentLog`, `PipelineStatus`, `StageStatus`
+**Resources:** `Workspace`, `WorkspaceMember`, `Project`, `Environment`, `Service`, `ConfigVar`, `Build`, `BuildList`, `BuildLog`, `Deploy`, `DeployList`, `DeployLog`, `PipelineStatus`, `StageStatus`
 
-**Requests:** `CreateOrgRequest`, `UpdateOrgRequest`, `CreateProjectRequest`, `UpdateProjectRequest`, `CreateAppRequest`, `UpdateAppOptions`, `ScaleRequest`, `SetConfigRequest`
+**Requests:** `CreateWorkspaceRequest`, `UpdateWorkspaceRequest`, `CreateProjectRequest`, `UpdateProjectRequest`, `CreateEnvironmentRequest`, `CreateServiceRequest`, `UpdateServiceOptions`, `ScaleRequest`, `SetConfigVarRequest`
 
-**Responses:** `DeployResult`, `BuildResult`, `CreateReleaseResult`, `DeployReleaseResult`
+**Responses:** `DeployResult`, `BuildResult`

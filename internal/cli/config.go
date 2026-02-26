@@ -9,10 +9,13 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+
+	"github.com/SideQuest-Group/ancla-client/internal/config"
 )
 
 func init() {
 	rootCmd.AddCommand(configCmd)
+	configCmd.PersistentFlags().String("scope", "service", "Config scope: workspace, project, env, or service")
 	configCmd.AddCommand(configListCmd)
 	configCmd.AddCommand(configSetCmd)
 	configCmd.AddCommand(configDeleteCmd)
@@ -25,24 +28,75 @@ func init() {
 var configCmd = &cobra.Command{
 	Use:     "config",
 	Aliases: []string{"cfg", "env"},
-	Short:   "Manage application configuration",
-	Long: `Manage configuration variables for an application.
+	Short:   "Manage configuration variables",
+	Long: `Manage configuration variables at different scopes.
 
-Configuration variables are key-value pairs injected into your application at
-runtime. Variables can be marked as secrets (values hidden by default) or as
-build-time variables available during image builds. Use sub-commands to list,
-set, delete, or bulk-import configuration from .env files.`,
-	Example: "  ancla config list <app-id>\n  ancla config set <app-id> KEY=value",
+Configuration variables are key-value pairs injected into your service at
+runtime. Use the --scope flag to target a specific level (workspace, project,
+env, or service). Variables can be marked as secrets (values hidden by default)
+or as build-time variables available during image builds. Use sub-commands to
+list, set, delete, or bulk-import configuration from .env files.`,
+	Example: `  ancla config list my-ws/my-proj/staging/my-svc
+  ancla config set my-ws/my-proj/staging/my-svc KEY=value
+  ancla config list --scope workspace my-ws`,
 	GroupID: "config",
 }
 
+// configAPIPath resolcts the API path for configuration based on the --scope
+// flag and positional argument. Returns the full API config path.
+func configAPIPath(cmd *cobra.Command, arg string) (string, error) {
+	scope, _ := cmd.Flags().GetString("scope")
+	if scope == "" {
+		scope = "service"
+	}
+
+	ws, proj, env, svc, err := config.ResolveServicePath(arg, cfg)
+	if err != nil {
+		return "", err
+	}
+
+	switch scope {
+	case "workspace":
+		if ws == "" {
+			return "", fmt.Errorf("workspace is required for --scope workspace")
+		}
+		return "/workspaces/" + ws + "/config/", nil
+	case "project":
+		if ws == "" || proj == "" {
+			return "", fmt.Errorf("workspace and project are required for --scope project")
+		}
+		return "/workspaces/" + ws + "/projects/" + proj + "/config/", nil
+	case "env":
+		if ws == "" || proj == "" || env == "" {
+			return "", fmt.Errorf("workspace, project, and env are required for --scope env")
+		}
+		return "/workspaces/" + ws + "/projects/" + proj + "/envs/" + env + "/config/", nil
+	case "service":
+		if ws == "" || proj == "" || env == "" || svc == "" {
+			return "", fmt.Errorf("workspace, project, env, and service are required for --scope service")
+		}
+		return "/workspaces/" + ws + "/projects/" + proj + "/envs/" + env + "/services/" + svc + "/config/", nil
+	default:
+		return "", fmt.Errorf("invalid scope %q — use workspace, project, env, or service", scope)
+	}
+}
+
 var configListCmd = &cobra.Command{
-	Use:     "list <app-id>",
+	Use:     "list [ws/proj/env/svc]",
 	Short:   "List configuration variables",
-	Example: "  ancla config list abc12345",
-	Args:    cobra.ExactArgs(1),
+	Example: "  ancla config list my-ws/my-proj/staging/my-svc\n  ancla config list --scope workspace my-ws",
+	Args:    cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		req, _ := http.NewRequest("GET", apiURL("/configurations/"+args[0]), nil)
+		var arg string
+		if len(args) == 1 {
+			arg = args[0]
+		}
+		cfgPath, err := configAPIPath(cmd, arg)
+		if err != nil {
+			return err
+		}
+
+		req, _ := http.NewRequest("GET", apiURL(cfgPath), nil)
 		body, err := doRequest(req)
 		if err != nil {
 			return err
@@ -83,12 +137,25 @@ var configListCmd = &cobra.Command{
 }
 
 var configSetCmd = &cobra.Command{
-	Use:     "set <app-id> KEY=value",
+	Use:     "set [ws/proj/env/svc] KEY=value",
 	Short:   "Set a configuration variable",
-	Example: "  ancla config set abc12345 DATABASE_URL=postgres://localhost/mydb",
-	Args:    cobra.ExactArgs(2),
+	Example: "  ancla config set my-ws/my-proj/staging/my-svc DATABASE_URL=postgres://localhost/mydb",
+	Args:    cobra.RangeArgs(1, 2),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		parts := strings.SplitN(args[1], "=", 2)
+		var arg, kvPair string
+		if len(args) == 2 {
+			arg = args[0]
+			kvPair = args[1]
+		} else {
+			kvPair = args[0]
+		}
+
+		cfgPath, err := configAPIPath(cmd, arg)
+		if err != nil {
+			return err
+		}
+
+		parts := strings.SplitN(kvPair, "=", 2)
 		if len(parts) != 2 {
 			return fmt.Errorf("expected KEY=value format")
 		}
@@ -97,7 +164,7 @@ var configSetCmd = &cobra.Command{
 			"name":  parts[0],
 			"value": parts[1],
 		})
-		req, _ := http.NewRequest("POST", apiURL("/configurations/"+args[0]), bytes.NewReader(payload))
+		req, _ := http.NewRequest("POST", apiURL(cfgPath), bytes.NewReader(payload))
 		req.Header.Set("Content-Type", "application/json")
 		if _, err := doRequest(req); err != nil {
 			return err
@@ -108,16 +175,29 @@ var configSetCmd = &cobra.Command{
 }
 
 var configDeleteCmd = &cobra.Command{
-	Use:     "delete <app-id> <config-id>",
+	Use:     "delete [ws/proj/env/svc] <config-id>",
 	Short:   "Delete a configuration variable",
-	Example: "  ancla config delete abc12345 <config-id>",
-	Args:    cobra.ExactArgs(2),
+	Example: "  ancla config delete my-ws/my-proj/staging/my-svc <config-id>",
+	Args:    cobra.RangeArgs(1, 2),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		var arg, configID string
+		if len(args) == 2 {
+			arg = args[0]
+			configID = args[1]
+		} else {
+			configID = args[0]
+		}
+
+		cfgPath, err := configAPIPath(cmd, arg)
+		if err != nil {
+			return err
+		}
+
 		if !confirmAction(cmd, "This will delete the configuration variable.") {
 			fmt.Println("Aborted.")
 			return nil
 		}
-		req, _ := http.NewRequest("DELETE", apiURL("/configurations/"+args[0]+"/"+args[1]), nil)
+		req, _ := http.NewRequest("DELETE", apiURL(cfgPath+configID), nil)
 		if _, err := doRequest(req); err != nil {
 			return err
 		}
@@ -127,11 +207,21 @@ var configDeleteCmd = &cobra.Command{
 }
 
 var configImportCmd = &cobra.Command{
-	Use:     "import <app-id>",
+	Use:     "import [ws/proj/env/svc]",
 	Short:   "Bulk import configuration from a .env file",
-	Example: "  ancla config import abc12345 --file .env",
-	Args:    cobra.ExactArgs(1),
+	Example: "  ancla config import my-ws/my-proj/staging/my-svc --file .env",
+	Args:    cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		var arg string
+		if len(args) == 1 {
+			arg = args[0]
+		}
+
+		cfgPath, err := configAPIPath(cmd, arg)
+		if err != nil {
+			return err
+		}
+
 		filePath, _ := cmd.Flags().GetString("file")
 		if filePath == "" {
 			return fmt.Errorf("--file flag is required")
@@ -145,7 +235,7 @@ var configImportCmd = &cobra.Command{
 		payload, _ := json.Marshal(map[string]any{
 			"raw": string(data),
 		})
-		req, _ := http.NewRequest("POST", apiURL("/configurations/"+args[0]+"/bulk"), bytes.NewReader(payload))
+		req, _ := http.NewRequest("POST", apiURL(cfgPath+"bulk"), bytes.NewReader(payload))
 		req.Header.Set("Content-Type", "application/json")
 		body, err := doRequest(req)
 		if err != nil {

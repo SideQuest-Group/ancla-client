@@ -143,13 +143,13 @@ func loginManual() error {
 }
 
 // saveAndVerifyKey validates an API key against the server and saves it to the
-// config file. Uses /organizations/ to verify the key since /auth/session only
+// config file. Uses /workspaces/ to verify the key since /auth/session only
 // supports cookie-based auth.
 func saveAndVerifyKey(apiKey string) error {
 	client := &http.Client{
 		Transport: &apiKeyTransport{key: apiKey, base: http.DefaultTransport},
 	}
-	req, err := http.NewRequest("GET", apiURL("/organizations/"), nil)
+	req, err := http.NewRequest("GET", apiURL("/workspaces/"), nil)
 	if err != nil {
 		return fmt.Errorf("invalid server URL: %w", err)
 	}
@@ -188,7 +188,7 @@ var whoamiCmd = &cobra.Command{
 		}
 
 		// Verify the key still works by hitting an authenticated endpoint
-		req, _ := http.NewRequest("GET", apiURL("/organizations/"), nil)
+		req, _ := http.NewRequest("GET", apiURL("/workspaces/"), nil)
 		_, err := doRequest(req)
 		if err != nil {
 			fmt.Println("Not authenticated (API key is invalid or expired). Run 'ancla login' to re-authenticate.")

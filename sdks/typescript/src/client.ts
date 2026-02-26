@@ -8,23 +8,23 @@ import {
 import type {
   AnclaClientOptions,
   ApiErrorBody,
-  App,
-  AppDetail,
+  Build,
+  BuildList,
   ConfigVar,
-  CreateReleaseResult,
-  Deployment,
+  Deploy,
+  DeployList,
+  DeployLog,
   DeployResult,
-  Image,
-  ImageList,
-  Org,
-  OrgDetail,
+  Environment,
   PipelineStatus,
   Project,
   ProjectDetail,
-  Release,
-  ReleaseList,
+  Service,
+  ServiceDetail,
   SetConfigOptions,
-  UpdateAppOptions,
+  UpdateServiceOptions,
+  Workspace,
+  WorkspaceDetail,
 } from "./types.js";
 
 const DEFAULT_SERVER = "https://ancla.dev";
@@ -45,232 +45,322 @@ export class AnclaClient {
   }
 
   // ---------------------------------------------------------------------------
-  // Organizations
+  // Workspaces
   // ---------------------------------------------------------------------------
 
-  /** List all organizations the authenticated user belongs to. */
-  async listOrgs(): Promise<Org[]> {
-    return this.request<Org[]>("GET", "/organizations/");
+  /** List all workspaces the authenticated user belongs to. */
+  async listWorkspaces(): Promise<Workspace[]> {
+    return this.request<Workspace[]>("GET", "/workspaces/");
   }
 
-  /** Get detailed information about an organization. */
-  async getOrg(slug: string): Promise<OrgDetail> {
-    return this.request<OrgDetail>("GET", `/organizations/${slug}`);
+  /** Get detailed information about a workspace. */
+  async getWorkspace(slug: string): Promise<WorkspaceDetail> {
+    return this.request<WorkspaceDetail>("GET", `/workspaces/${slug}`);
   }
 
-  /** Create a new organization. */
-  async createOrg(name: string): Promise<Org> {
-    return this.request<Org>("POST", "/organizations/", { name });
+  /** Create a new workspace. */
+  async createWorkspace(name: string): Promise<Workspace> {
+    return this.request<Workspace>("POST", "/workspaces/", { name });
   }
 
-  /** Update an organization's name. */
-  async updateOrg(slug: string, name: string): Promise<Org> {
-    return this.request<Org>("PATCH", `/organizations/${slug}`, { name });
+  /** Update a workspace's name. */
+  async updateWorkspace(slug: string, name: string): Promise<Workspace> {
+    return this.request<Workspace>("PATCH", `/workspaces/${slug}`, { name });
   }
 
-  /** Delete an organization. */
-  async deleteOrg(slug: string): Promise<void> {
-    await this.request("DELETE", `/organizations/${slug}`);
+  /** Delete a workspace. */
+  async deleteWorkspace(slug: string): Promise<void> {
+    await this.request("DELETE", `/workspaces/${slug}`);
   }
 
   // ---------------------------------------------------------------------------
   // Projects
   // ---------------------------------------------------------------------------
 
-  /** List all projects, optionally filtered by organization slug. */
-  async listProjects(org?: string): Promise<Project[]> {
-    const path = org ? `/projects/${org}` : "/projects/";
-    return this.request<Project[]>("GET", path);
+  /** List all projects within a workspace. */
+  async listProjects(ws: string): Promise<Project[]> {
+    return this.request<Project[]>("GET", `/workspaces/${ws}/projects/`);
   }
 
   /** Get detailed information about a project. */
-  async getProject(org: string, slug: string): Promise<ProjectDetail> {
-    return this.request<ProjectDetail>("GET", `/projects/${org}/${slug}`);
+  async getProject(ws: string, slug: string): Promise<ProjectDetail> {
+    return this.request<ProjectDetail>(
+      "GET",
+      `/workspaces/${ws}/projects/${slug}`,
+    );
   }
 
-  /** Create a new project within an organization. */
-  async createProject(org: string, name: string): Promise<Project> {
-    return this.request<Project>("POST", `/projects/${org}`, { name });
+  /** Create a new project within a workspace. */
+  async createProject(ws: string, name: string): Promise<Project> {
+    return this.request<Project>("POST", `/workspaces/${ws}/projects/`, {
+      name,
+    });
   }
 
   /** Update a project's name. */
   async updateProject(
-    org: string,
+    ws: string,
     slug: string,
     name: string,
   ): Promise<Project> {
-    return this.request<Project>("PATCH", `/projects/${org}/${slug}`, { name });
-  }
-
-  /** Delete a project. */
-  async deleteProject(org: string, slug: string): Promise<void> {
-    await this.request("DELETE", `/projects/${org}/${slug}`);
-  }
-
-  // ---------------------------------------------------------------------------
-  // Applications
-  // ---------------------------------------------------------------------------
-
-  /** List applications in a project. */
-  async listApps(org: string, project: string): Promise<App[]> {
-    return this.request<App[]>("GET", `/applications/${org}/${project}`);
-  }
-
-  /** Get detailed application information. */
-  async getApp(
-    org: string,
-    project: string,
-    slug: string,
-  ): Promise<AppDetail> {
-    return this.request<AppDetail>(
-      "GET",
-      `/applications/${org}/${project}/${slug}`,
+    return this.request<Project>(
+      "PATCH",
+      `/workspaces/${ws}/projects/${slug}`,
+      { name },
     );
   }
 
-  /** Create a new application. */
-  async createApp(
-    org: string,
-    project: string,
-    name: string,
-    platform: string,
-  ): Promise<App> {
-    return this.request<App>("POST", `/applications/${org}/${project}`, {
-      name,
-      platform,
-    });
+  /** Delete a project. */
+  async deleteProject(ws: string, slug: string): Promise<void> {
+    await this.request("DELETE", `/workspaces/${ws}/projects/${slug}`);
   }
 
-  /** Update an application. */
-  async updateApp(
-    org: string,
-    project: string,
+  // ---------------------------------------------------------------------------
+  // Environments
+  // ---------------------------------------------------------------------------
+
+  /** List environments within a project. */
+  async listEnvironments(ws: string, proj: string): Promise<Environment[]> {
+    return this.request<Environment[]>(
+      "GET",
+      `/workspaces/${ws}/projects/${proj}/envs/`,
+    );
+  }
+
+  /** Get a single environment. */
+  async getEnvironment(
+    ws: string,
+    proj: string,
     slug: string,
-    opts: UpdateAppOptions,
-  ): Promise<AppDetail> {
-    return this.request<AppDetail>(
+  ): Promise<Environment> {
+    return this.request<Environment>(
+      "GET",
+      `/workspaces/${ws}/projects/${proj}/envs/${slug}`,
+    );
+  }
+
+  /** Create a new environment within a project. */
+  async createEnvironment(
+    ws: string,
+    proj: string,
+    name: string,
+  ): Promise<Environment> {
+    return this.request<Environment>(
+      "POST",
+      `/workspaces/${ws}/projects/${proj}/envs/`,
+      { name },
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Services
+  // ---------------------------------------------------------------------------
+
+  /** Build the service base path. */
+  private servicePath(ws: string, proj: string, env: string): string {
+    return `/workspaces/${ws}/projects/${proj}/envs/${env}/services`;
+  }
+
+  /** List services in an environment. */
+  async listServices(
+    ws: string,
+    proj: string,
+    env: string,
+  ): Promise<Service[]> {
+    return this.request<Service[]>(
+      "GET",
+      `${this.servicePath(ws, proj, env)}/`,
+    );
+  }
+
+  /** Get detailed service information. */
+  async getService(
+    ws: string,
+    proj: string,
+    env: string,
+    slug: string,
+  ): Promise<ServiceDetail> {
+    return this.request<ServiceDetail>(
+      "GET",
+      `${this.servicePath(ws, proj, env)}/${slug}`,
+    );
+  }
+
+  /** Create a new service. */
+  async createService(
+    ws: string,
+    proj: string,
+    env: string,
+    name: string,
+    platform: string,
+  ): Promise<Service> {
+    return this.request<Service>(
+      "POST",
+      `${this.servicePath(ws, proj, env)}/`,
+      { name, platform },
+    );
+  }
+
+  /** Update a service. */
+  async updateService(
+    ws: string,
+    proj: string,
+    env: string,
+    slug: string,
+    opts: UpdateServiceOptions,
+  ): Promise<ServiceDetail> {
+    return this.request<ServiceDetail>(
       "PATCH",
-      `/applications/${org}/${project}/${slug}`,
+      `${this.servicePath(ws, proj, env)}/${slug}`,
       opts,
     );
   }
 
-  /** Delete an application. */
-  async deleteApp(
-    org: string,
-    project: string,
+  /** Delete a service. */
+  async deleteService(
+    ws: string,
+    proj: string,
+    env: string,
     slug: string,
   ): Promise<void> {
-    await this.request("DELETE", `/applications/${org}/${project}/${slug}`);
+    await this.request("DELETE", `${this.servicePath(ws, proj, env)}/${slug}`);
   }
 
-  /** Trigger a full deploy for an application (by app ID). */
-  async deployApp(appId: string): Promise<DeployResult> {
+  /** Trigger a full deploy for a service. */
+  async deployService(
+    ws: string,
+    proj: string,
+    env: string,
+    slug: string,
+  ): Promise<DeployResult> {
     return this.request<DeployResult>(
       "POST",
-      `/applications/${appId}/deploy`,
+      `${this.servicePath(ws, proj, env)}/${slug}/deploy`,
     );
   }
 
-  /** Scale application processes (by app ID). */
-  async scaleApp(
-    appId: string,
+  /** Scale service processes. */
+  async scaleService(
+    ws: string,
+    proj: string,
+    env: string,
+    slug: string,
     counts: Record<string, number>,
   ): Promise<void> {
-    await this.request("POST", `/applications/${appId}/scale`, {
-      process_counts: counts,
-    });
+    await this.request(
+      "POST",
+      `${this.servicePath(ws, proj, env)}/${slug}/scale`,
+      {
+        process_counts: counts,
+      },
+    );
   }
 
-  /** Get pipeline status for an application (by app ID). */
-  async getAppStatus(appId: string): Promise<PipelineStatus> {
+  /** Get pipeline status for a service. */
+  async getServiceStatus(
+    ws: string,
+    proj: string,
+    env: string,
+    slug: string,
+  ): Promise<PipelineStatus> {
     return this.request<PipelineStatus>(
       "GET",
-      `/applications/${appId}/pipeline-status`,
+      `${this.servicePath(ws, proj, env)}/${slug}/pipeline-status`,
     );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Builds
+  // ---------------------------------------------------------------------------
+
+  /** List builds for a service. */
+  async listBuilds(
+    ws: string,
+    proj: string,
+    env: string,
+    svc: string,
+  ): Promise<BuildList> {
+    return this.request<BuildList>(
+      "GET",
+      `${this.servicePath(ws, proj, env)}/${svc}/builds/`,
+    );
+  }
+
+  /** Get a single build's log by build ID. */
+  async getBuild(buildId: string): Promise<Build> {
+    return this.request<Build>("GET", `/builds/${buildId}/log`);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Deploys
+  // ---------------------------------------------------------------------------
+
+  /** List deploys for a service. */
+  async listDeploys(
+    ws: string,
+    proj: string,
+    env: string,
+    svc: string,
+  ): Promise<DeployList> {
+    return this.request<DeployList>(
+      "GET",
+      `${this.servicePath(ws, proj, env)}/${svc}/deploys/`,
+    );
+  }
+
+  /** Get deploy details by ID. */
+  async getDeploy(deployId: string): Promise<Deploy> {
+    return this.request<Deploy>("GET", `/deploys/${deployId}/detail`);
+  }
+
+  /** Get deploy log output by ID. */
+  async getDeployLog(deployId: string): Promise<DeployLog> {
+    return this.request<DeployLog>("GET", `/deploys/${deployId}/log`);
   }
 
   // ---------------------------------------------------------------------------
   // Configuration
   // ---------------------------------------------------------------------------
 
-  /** List configuration variables for an application (by app ID). */
-  async listConfig(appId: string): Promise<ConfigVar[]> {
-    return this.request<ConfigVar[]>("GET", `/configurations/${appId}`);
-  }
-
-  /** Get a single configuration variable by ID. */
-  async getConfig(appId: string, configId: string): Promise<ConfigVar> {
-    return this.request<ConfigVar>(
+  /** List configuration variables for a service. */
+  async listConfig(
+    ws: string,
+    proj: string,
+    env: string,
+    svc: string,
+  ): Promise<ConfigVar[]> {
+    return this.request<ConfigVar[]>(
       "GET",
-      `/configurations/${appId}/${configId}`,
+      `${this.servicePath(ws, proj, env)}/${svc}/config/`,
     );
   }
 
   /** Set (create or update) a configuration variable. */
   async setConfig(
-    appId: string,
-    key: string,
-    value: string,
-    opts?: SetConfigOptions,
+    ws: string,
+    proj: string,
+    env: string,
+    svc: string,
+    opts: SetConfigOptions,
   ): Promise<void> {
-    await this.request("POST", `/configurations/${appId}`, {
-      name: key,
-      value,
-      ...opts,
-    });
-  }
-
-  /** Delete a configuration variable. */
-  async deleteConfig(appId: string, configId: string): Promise<void> {
-    await this.request("DELETE", `/configurations/${appId}/${configId}`);
-  }
-
-  // ---------------------------------------------------------------------------
-  // Images
-  // ---------------------------------------------------------------------------
-
-  /** List images for an application (by app ID). */
-  async listImages(appId: string): Promise<ImageList> {
-    return this.request<ImageList>("GET", `/images/${appId}`);
-  }
-
-  /** Get a single image by ID. */
-  async getImage(imageId: string): Promise<Image> {
-    return this.request<Image>("GET", `/images/${imageId}/log`);
-  }
-
-  // ---------------------------------------------------------------------------
-  // Releases
-  // ---------------------------------------------------------------------------
-
-  /** List releases for an application (by app ID). */
-  async listReleases(appId: string): Promise<ReleaseList> {
-    return this.request<ReleaseList>("GET", `/releases/${appId}`);
-  }
-
-  /** Get a single release by ID. */
-  async getRelease(releaseId: string): Promise<Release> {
-    return this.request<Release>("GET", `/releases/${releaseId}/detail`);
-  }
-
-  /** Create a new release for an application (by app ID). */
-  async createRelease(appId: string): Promise<CreateReleaseResult> {
-    return this.request<CreateReleaseResult>(
+    await this.request(
       "POST",
-      `/releases/${appId}/create`,
+      `${this.servicePath(ws, proj, env)}/${svc}/config/`,
+      opts,
     );
   }
 
-  // ---------------------------------------------------------------------------
-  // Deployments
-  // ---------------------------------------------------------------------------
-
-  /** Get deployment details by ID. */
-  async getDeployment(deploymentId: string): Promise<Deployment> {
-    return this.request<Deployment>(
-      "GET",
-      `/deployments/${deploymentId}/detail`,
+  /** Delete a configuration variable by ID. */
+  async deleteConfig(
+    ws: string,
+    proj: string,
+    env: string,
+    svc: string,
+    configId: string,
+  ): Promise<void> {
+    await this.request(
+      "DELETE",
+      `${this.servicePath(ws, proj, env)}/${svc}/config/${configId}`,
     );
   }
 
@@ -352,20 +442,14 @@ export class AnclaClient {
 
     switch (status) {
       case 401:
-        throw new AuthenticationError(
-          message ?? "Not authenticated",
-          body,
-        );
+        throw new AuthenticationError(message ?? "Not authenticated", body);
       case 404:
         throw new NotFoundError(message ?? "Not found", body);
       case 422:
         throw new ValidationError(message ?? "Validation error", body);
       default:
         if (status >= 500) {
-          throw new ServerError(
-            message ?? "Server error",
-            body,
-          );
+          throw new ServerError(message ?? "Server error", body);
         }
         throw new AnclaError(
           message ?? `Request failed (${status})`,

@@ -10,6 +10,8 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+
+	"github.com/SideQuest-Group/ancla-client/internal/config"
 )
 
 func init() {
@@ -20,33 +22,39 @@ func init() {
 var downYes bool
 
 var downCmd = &cobra.Command{
-	Use:   "down [org/project/app]",
-	Short: "Scale all processes to 0 for an application",
-	Long: `Tear down an application by scaling all of its processes to zero.
+	Use:   "down [ws/proj/env/svc]",
+	Short: "Scale all processes to 0 for a service",
+	Long: `Tear down a service by scaling all of its processes to zero.
 
-If no app path is provided, the linked app context from the local
+If no service path is provided, the linked context from the local
 .ancla/config.yaml is used (set via "ancla link"). You can also pass
-the full org/project/app path as an argument.
+the full ws/proj/env/svc path as an argument.
 
 Use --yes to skip the confirmation prompt (useful in scripts and CI).`,
 	Example: `  ancla down
-  ancla down my-org/my-project/my-app
-  ancla down my-org/my-project/my-app --yes`,
+  ancla down my-ws/my-proj/staging/my-svc
+  ancla down my-ws/my-proj/staging/my-svc --yes`,
 	GroupID: "workflow",
 	Args:    cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		// Resolve app path from argument or link context.
-		var appPath string
+		// Resolve service path from argument or link context.
+		var arg string
 		if len(args) == 1 {
-			appPath = args[0]
-		} else if cfg.IsLinked() && cfg.Org != "" && cfg.Project != "" && cfg.App != "" {
-			appPath = cfg.Org + "/" + cfg.Project + "/" + cfg.App
-		} else {
-			return fmt.Errorf("no app specified — pass org/project/app or link a directory first")
+			arg = args[0]
+		}
+		ws, proj, env, svc, err := config.ResolveServicePath(arg, cfg)
+		if err != nil {
+			return err
+		}
+		if ws == "" || proj == "" || env == "" || svc == "" {
+			return fmt.Errorf("no service specified — pass ws/proj/env/svc or link a directory first")
 		}
 
-		// Fetch the app to discover current process types.
-		req, err := http.NewRequest("GET", apiURL("/applications/"+appPath), nil)
+		svcPath := "/workspaces/" + ws + "/projects/" + proj + "/envs/" + env + "/services/" + svc
+		displayPath := ws + "/" + proj + "/" + env + "/" + svc
+
+		// Fetch the service to discover current process types.
+		req, err := http.NewRequest("GET", apiURL(svcPath), nil)
 		if err != nil {
 			return fmt.Errorf("building request: %w", err)
 		}
@@ -55,20 +63,20 @@ Use --yes to skip the confirmation prompt (useful in scripts and CI).`,
 			return err
 		}
 
-		var app struct {
+		var service struct {
 			ProcessCounts map[string]int `json:"process_counts"`
 		}
-		if err := json.Unmarshal(body, &app); err != nil {
-			return fmt.Errorf("parsing application response: %w", err)
+		if err := json.Unmarshal(body, &service); err != nil {
+			return fmt.Errorf("parsing service response: %w", err)
 		}
 
-		if len(app.ProcessCounts) == 0 {
-			fmt.Println("No processes found for this application.")
+		if len(service.ProcessCounts) == 0 {
+			fmt.Println("No processes found for this service.")
 			return nil
 		}
 
 		// Warn and confirm.
-		fmt.Printf("This will scale all processes to 0 for %s\n", appPath)
+		fmt.Printf("This will scale all processes to 0 for %s\n", displayPath)
 		if !downYes {
 			fmt.Print("Continue? [y/N] ")
 			reader := bufio.NewReader(os.Stdin)
@@ -81,15 +89,15 @@ Use --yes to skip the confirmation prompt (useful in scripts and CI).`,
 		}
 
 		// Build zero-scaled process counts.
-		zeroed := make(map[string]int, len(app.ProcessCounts))
-		for proc := range app.ProcessCounts {
+		zeroed := make(map[string]int, len(service.ProcessCounts))
+		for proc := range service.ProcessCounts {
 			zeroed[proc] = 0
 		}
 
 		payload, _ := json.Marshal(map[string]any{"process_counts": zeroed})
 
 		stop := spin("Scaling down...")
-		scaleReq, err := http.NewRequest("POST", apiURL("/applications/"+appPath+"/scale"), bytes.NewReader(payload))
+		scaleReq, err := http.NewRequest("POST", apiURL(svcPath+"/scale"), bytes.NewReader(payload))
 		if err != nil {
 			stop()
 			return fmt.Errorf("building request: %w", err)

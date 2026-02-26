@@ -25,7 +25,7 @@ For headless environments or when browser login isn't available:
 ancla login --manual
 ```
 
-This prompts you to paste an API key directly. The key is validated against the server before saving.
+This prompts you to paste an API key directly. The key is validated against the server (via `/api/v1/workspaces/`) before saving.
 
 To get an API key manually, log in to the Ancla web UI and navigate to your account settings.
 
@@ -44,7 +44,7 @@ This takes precedence over config files but is overridden by the `--api-key` fla
 For one-off commands:
 
 ```bash
-ancla apps list --api-key ancla_your_key_here
+ancla services list --api-key ancla_your_key_here
 ```
 
 :::caution

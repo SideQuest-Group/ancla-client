@@ -1,58 +1,119 @@
 ---
-title: Pipeline
-description: API reference for pipeline status, metrics, and deployment operations.
+title: "Pipeline"
+description: API reference for pipeline endpoints.
 ---
 
-The pipeline API provides a unified view of the build-release-deploy lifecycle for a service within a project.
+<!-- Auto-generated from openapi.json — do not edit manually -->
 
-All endpoints accept `service` and `env` as query parameters to scope the pipeline to a specific service and environment.
-
-## Get pipeline status
+## Pipeline History
 
 ```http
-GET /orgs/{org}/projects/{project}/pipeline/status?service={svc}&env={env}
+GET /workspaces/{workspace}/projects/{project}/pipeline/history
 ```
 
-### Response
+**Path parameters:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `workspace` | string |  |
+| `project` | string |  |
+
+**Query parameters:**
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| `service` | string | Yes |  |
+| `env` | string | Yes |  |
+| `limit` | integer | No |  |
+
+**Response:**
 
 ```json
-{
-  "build": {"status": "complete"},
-  "release": {"status": "complete"},
-  "deploy": {"status": "running"}
-}
+[
+  {}
+]
 ```
 
-Each stage is `null` if no activity has occurred.
 
-## Get pipeline metrics
+## Pipeline Metrics
 
 ```http
-GET /orgs/{org}/projects/{project}/pipeline/metrics?service={svc}&env={env}
+GET /workspaces/{workspace}/projects/{project}/pipeline/metrics
 ```
 
-Returns success rates and counts for the last 30 days.
+**Path parameters:**
 
-## Trigger a deploy
+| Name | Type | Description |
+|------|------|-------------|
+| `workspace` | string |  |
+| `project` | string |  |
+
+**Query parameters:**
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| `service` | string | Yes |  |
+| `env` | string | Yes |  |
+
+
+## Pipeline Status
 
 ```http
-POST /orgs/{org}/projects/{project}/pipeline/deploy?service={svc}&env={env}
+GET /workspaces/{workspace}/projects/{project}/pipeline/status
 ```
 
-Runs the full pipeline: build image, create release, deploy.
+**Path parameters:**
 
-## Get deployment history
+| Name | Type | Description |
+|------|------|-------------|
+| `workspace` | string |  |
+| `project` | string |  |
+
+**Query parameters:**
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| `service` | string | Yes |  |
+| `env` | string | Yes |  |
+
+
+## Pipeline Deploy
 
 ```http
-GET /orgs/{org}/projects/{project}/pipeline/history?service={svc}&env={env}&limit=10
+POST /workspaces/{workspace}/projects/{project}/pipeline/deploy
 ```
 
-Returns recent deployments. The `limit` parameter defaults to 10.
+**Path parameters:**
 
-## Rollback
+| Name | Type | Description |
+|------|------|-------------|
+| `workspace` | string |  |
+| `project` | string |  |
+
+**Query parameters:**
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| `service` | string | Yes |  |
+| `env` | string | Yes |  |
+
+
+## Pipeline Rollback
 
 ```http
-POST /orgs/{org}/projects/{project}/pipeline/rollback?service={svc}&env={env}
+POST /workspaces/{workspace}/projects/{project}/pipeline/rollback
 ```
 
-Rolls back to the previous successful deployment. Creates a new deployment using the last known-good release.
+**Path parameters:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `workspace` | string |  |
+| `project` | string |  |
+
+**Query parameters:**
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| `service` | string | Yes |  |
+| `env` | string | Yes |  |

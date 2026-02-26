@@ -110,21 +110,22 @@ func IsNotFound(err error) bool {
 	return ok
 }
 
-// --- Organization API ---
+// --- Workspace API ---
 
-// Org represents an Ancla organization.
-type Org struct {
-	ID               string `json:"id"`
-	Name             string `json:"name"`
-	Slug             string `json:"slug"`
-	MemberCount      int    `json:"member_count"`
-	ProjectCount     int    `json:"project_count"`
-	ApplicationCount int    `json:"application_count"`
+// Workspace represents an Ancla workspace (formerly organization).
+type Workspace struct {
+	ID           string   `json:"id"`
+	Name         string   `json:"name"`
+	Slug         string   `json:"slug"`
+	MemberCount  int      `json:"member_count"`
+	ProjectCount int      `json:"project_count"`
+	ServiceCount int      `json:"service_count"`
+	Members      []string `json:"members"`
 }
 
-// ListOrgs returns all organizations the authenticated user belongs to.
-func (c *Client) ListOrgs() ([]Org, error) {
-	req, err := http.NewRequest("GET", c.apiURL("/organizations/"), nil)
+// ListWorkspaces returns all workspaces the authenticated user belongs to.
+func (c *Client) ListWorkspaces() ([]Workspace, error) {
+	req, err := http.NewRequest("GET", c.apiURL("/workspaces/"), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -132,16 +133,16 @@ func (c *Client) ListOrgs() ([]Org, error) {
 	if err != nil {
 		return nil, err
 	}
-	var orgs []Org
-	if err := json.Unmarshal(body, &orgs); err != nil {
-		return nil, fmt.Errorf("parsing orgs response: %w", err)
+	var workspaces []Workspace
+	if err := json.Unmarshal(body, &workspaces); err != nil {
+		return nil, fmt.Errorf("parsing workspaces response: %w", err)
 	}
-	return orgs, nil
+	return workspaces, nil
 }
 
-// GetOrg returns an organization by slug.
-func (c *Client) GetOrg(slug string) (*Org, error) {
-	req, err := http.NewRequest("GET", c.apiURL("/organizations/"+slug), nil)
+// GetWorkspace returns a workspace by slug.
+func (c *Client) GetWorkspace(slug string) (*Workspace, error) {
+	req, err := http.NewRequest("GET", c.apiURL("/workspaces/"+slug), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -149,17 +150,17 @@ func (c *Client) GetOrg(slug string) (*Org, error) {
 	if err != nil {
 		return nil, err
 	}
-	var org Org
-	if err := json.Unmarshal(body, &org); err != nil {
-		return nil, fmt.Errorf("parsing org response: %w", err)
+	var ws Workspace
+	if err := json.Unmarshal(body, &ws); err != nil {
+		return nil, fmt.Errorf("parsing workspace response: %w", err)
 	}
-	return &org, nil
+	return &ws, nil
 }
 
-// CreateOrg creates a new organization.
-func (c *Client) CreateOrg(name string) (*Org, error) {
+// CreateWorkspace creates a new workspace.
+func (c *Client) CreateWorkspace(name string) (*Workspace, error) {
 	payload, _ := json.Marshal(map[string]string{"name": name})
-	req, err := http.NewRequest("POST", c.apiURL("/organizations/"), bytes.NewReader(payload))
+	req, err := http.NewRequest("POST", c.apiURL("/workspaces/"), bytes.NewReader(payload))
 	if err != nil {
 		return nil, err
 	}
@@ -168,17 +169,17 @@ func (c *Client) CreateOrg(name string) (*Org, error) {
 	if err != nil {
 		return nil, err
 	}
-	var org Org
-	if err := json.Unmarshal(body, &org); err != nil {
-		return nil, fmt.Errorf("parsing org response: %w", err)
+	var ws Workspace
+	if err := json.Unmarshal(body, &ws); err != nil {
+		return nil, fmt.Errorf("parsing workspace response: %w", err)
 	}
-	return &org, nil
+	return &ws, nil
 }
 
-// UpdateOrg updates an organization by slug.
-func (c *Client) UpdateOrg(slug string, name string) (*Org, error) {
+// UpdateWorkspace updates a workspace by slug.
+func (c *Client) UpdateWorkspace(slug string, name string) (*Workspace, error) {
 	payload, _ := json.Marshal(map[string]string{"name": name})
-	req, err := http.NewRequest("PATCH", c.apiURL("/organizations/"+slug), bytes.NewReader(payload))
+	req, err := http.NewRequest("PATCH", c.apiURL("/workspaces/"+slug), bytes.NewReader(payload))
 	if err != nil {
 		return nil, err
 	}
@@ -187,16 +188,16 @@ func (c *Client) UpdateOrg(slug string, name string) (*Org, error) {
 	if err != nil {
 		return nil, err
 	}
-	var org Org
-	if err := json.Unmarshal(body, &org); err != nil {
-		return nil, fmt.Errorf("parsing org response: %w", err)
+	var ws Workspace
+	if err := json.Unmarshal(body, &ws); err != nil {
+		return nil, fmt.Errorf("parsing workspace response: %w", err)
 	}
-	return &org, nil
+	return &ws, nil
 }
 
-// DeleteOrg deletes an organization by slug.
-func (c *Client) DeleteOrg(slug string) error {
-	req, err := http.NewRequest("DELETE", c.apiURL("/organizations/"+slug), nil)
+// DeleteWorkspace deletes a workspace by slug.
+func (c *Client) DeleteWorkspace(slug string) error {
+	req, err := http.NewRequest("DELETE", c.apiURL("/workspaces/"+slug), nil)
 	if err != nil {
 		return err
 	}
@@ -208,19 +209,36 @@ func (c *Client) DeleteOrg(slug string) error {
 
 // Project represents an Ancla project.
 type Project struct {
-	ID               string `json:"id"`
-	Name             string `json:"name"`
-	Slug             string `json:"slug"`
-	OrganizationSlug string `json:"organization_slug"`
-	OrganizationName string `json:"organization_name"`
-	ApplicationCount int    `json:"application_count"`
-	Created          string `json:"created"`
-	Updated          string `json:"updated"`
+	ID            string `json:"id"`
+	Name          string `json:"name"`
+	Slug          string `json:"slug"`
+	WorkspaceSlug string `json:"workspace_slug"`
+	WorkspaceName string `json:"workspace_name"`
+	ServiceCount  int    `json:"service_count"`
+	Created       string `json:"created"`
+	Updated       string `json:"updated"`
 }
 
-// GetProject returns a project by org slug and project slug.
-func (c *Client) GetProject(orgSlug, projectSlug string) (*Project, error) {
-	req, err := http.NewRequest("GET", c.apiURL("/projects/"+orgSlug+"/"+projectSlug), nil)
+// ListProjects returns all projects in a workspace.
+func (c *Client) ListProjects(ws string) ([]Project, error) {
+	req, err := http.NewRequest("GET", c.apiURL("/workspaces/"+ws+"/projects/"), nil)
+	if err != nil {
+		return nil, err
+	}
+	body, err := c.doRequest(req)
+	if err != nil {
+		return nil, err
+	}
+	var projects []Project
+	if err := json.Unmarshal(body, &projects); err != nil {
+		return nil, fmt.Errorf("parsing projects response: %w", err)
+	}
+	return projects, nil
+}
+
+// GetProject returns a project by workspace slug and project slug.
+func (c *Client) GetProject(ws, projectSlug string) (*Project, error) {
+	req, err := http.NewRequest("GET", c.apiURL("/workspaces/"+ws+"/projects/"+projectSlug), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -235,10 +253,10 @@ func (c *Client) GetProject(orgSlug, projectSlug string) (*Project, error) {
 	return &project, nil
 }
 
-// CreateProject creates a new project under an organization.
-func (c *Client) CreateProject(orgSlug, name string) (*Project, error) {
+// CreateProject creates a new project under a workspace.
+func (c *Client) CreateProject(ws, name string) (*Project, error) {
 	payload, _ := json.Marshal(map[string]string{"name": name})
-	req, err := http.NewRequest("POST", c.apiURL("/projects/"+orgSlug), bytes.NewReader(payload))
+	req, err := http.NewRequest("POST", c.apiURL("/workspaces/"+ws+"/projects/"), bytes.NewReader(payload))
 	if err != nil {
 		return nil, err
 	}
@@ -254,10 +272,10 @@ func (c *Client) CreateProject(orgSlug, name string) (*Project, error) {
 	return &project, nil
 }
 
-// UpdateProject updates a project by org slug and project slug.
-func (c *Client) UpdateProject(orgSlug, projectSlug, name string) (*Project, error) {
+// UpdateProject updates a project by workspace slug and project slug.
+func (c *Client) UpdateProject(ws, projectSlug, name string) (*Project, error) {
 	payload, _ := json.Marshal(map[string]string{"name": name})
-	req, err := http.NewRequest("PATCH", c.apiURL("/projects/"+orgSlug+"/"+projectSlug), bytes.NewReader(payload))
+	req, err := http.NewRequest("PATCH", c.apiURL("/workspaces/"+ws+"/projects/"+projectSlug), bytes.NewReader(payload))
 	if err != nil {
 		return nil, err
 	}
@@ -273,9 +291,9 @@ func (c *Client) UpdateProject(orgSlug, projectSlug, name string) (*Project, err
 	return &project, nil
 }
 
-// DeleteProject deletes a project by org slug and project slug.
-func (c *Client) DeleteProject(orgSlug, projectSlug string) error {
-	req, err := http.NewRequest("DELETE", c.apiURL("/projects/"+orgSlug+"/"+projectSlug), nil)
+// DeleteProject deletes a project by workspace slug and project slug.
+func (c *Client) DeleteProject(ws, projectSlug string) error {
+	req, err := http.NewRequest("DELETE", c.apiURL("/workspaces/"+ws+"/projects/"+projectSlug), nil)
 	if err != nil {
 		return err
 	}
@@ -283,22 +301,118 @@ func (c *Client) DeleteProject(orgSlug, projectSlug string) error {
 	return err
 }
 
-// --- Application API ---
+// --- Environment API ---
 
-// App represents an Ancla application.
-type App struct {
+// Environment represents an Ancla environment within a project.
+type Environment struct {
+	ID           string `json:"id"`
+	Name         string `json:"name"`
+	Slug         string `json:"slug"`
+	ServiceCount int    `json:"service_count"`
+	Created      string `json:"created"`
+}
+
+// ListEnvironments returns all environments in a project.
+func (c *Client) ListEnvironments(ws, proj string) ([]Environment, error) {
+	req, err := http.NewRequest("GET", c.apiURL("/workspaces/"+ws+"/projects/"+proj+"/envs/"), nil)
+	if err != nil {
+		return nil, err
+	}
+	body, err := c.doRequest(req)
+	if err != nil {
+		return nil, err
+	}
+	var envs []Environment
+	if err := json.Unmarshal(body, &envs); err != nil {
+		return nil, fmt.Errorf("parsing environments response: %w", err)
+	}
+	return envs, nil
+}
+
+// GetEnvironment returns an environment by workspace, project, and environment slug.
+func (c *Client) GetEnvironment(ws, proj, envSlug string) (*Environment, error) {
+	req, err := http.NewRequest("GET", c.apiURL("/workspaces/"+ws+"/projects/"+proj+"/envs/"+envSlug), nil)
+	if err != nil {
+		return nil, err
+	}
+	body, err := c.doRequest(req)
+	if err != nil {
+		return nil, err
+	}
+	var env Environment
+	if err := json.Unmarshal(body, &env); err != nil {
+		return nil, fmt.Errorf("parsing environment response: %w", err)
+	}
+	return &env, nil
+}
+
+// CreateEnvironment creates a new environment under a project.
+func (c *Client) CreateEnvironment(ws, proj, name string) (*Environment, error) {
+	payload, _ := json.Marshal(map[string]string{"name": name})
+	req, err := http.NewRequest("POST", c.apiURL("/workspaces/"+ws+"/projects/"+proj+"/envs/"), bytes.NewReader(payload))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	body, err := c.doRequest(req)
+	if err != nil {
+		return nil, err
+	}
+	var env Environment
+	if err := json.Unmarshal(body, &env); err != nil {
+		return nil, fmt.Errorf("parsing environment response: %w", err)
+	}
+	return &env, nil
+}
+
+// UpdateEnvironment updates an environment by workspace, project, and environment slug.
+func (c *Client) UpdateEnvironment(ws, proj, envSlug, name string) (*Environment, error) {
+	payload, _ := json.Marshal(map[string]string{"name": name})
+	req, err := http.NewRequest("PATCH", c.apiURL("/workspaces/"+ws+"/projects/"+proj+"/envs/"+envSlug), bytes.NewReader(payload))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	body, err := c.doRequest(req)
+	if err != nil {
+		return nil, err
+	}
+	var env Environment
+	if err := json.Unmarshal(body, &env); err != nil {
+		return nil, fmt.Errorf("parsing environment response: %w", err)
+	}
+	return &env, nil
+}
+
+// DeleteEnvironment deletes an environment by workspace, project, and environment slug.
+func (c *Client) DeleteEnvironment(ws, proj, envSlug string) error {
+	req, err := http.NewRequest("DELETE", c.apiURL("/workspaces/"+ws+"/projects/"+proj+"/envs/"+envSlug), nil)
+	if err != nil {
+		return err
+	}
+	_, err = c.doRequest(req)
+	return err
+}
+
+// --- Service API ---
+
+// Service represents an Ancla service (formerly application).
+type Service struct {
 	ID               string         `json:"id"`
 	Name             string         `json:"name"`
 	Slug             string         `json:"slug"`
+	WorkspaceSlug    string         `json:"workspace_slug"`
+	ProjectSlug      string         `json:"project_slug"`
+	EnvSlug          string         `json:"env_slug"`
 	Platform         string         `json:"platform"`
 	GithubRepository string         `json:"github_repository"`
 	AutoDeployBranch string         `json:"auto_deploy_branch"`
 	ProcessCounts    map[string]int `json:"process_counts"`
 }
 
-// GetApp returns an application by org/project/app slugs.
-func (c *Client) GetApp(orgSlug, projectSlug, appSlug string) (*App, error) {
-	req, err := http.NewRequest("GET", c.apiURL("/applications/"+orgSlug+"/"+projectSlug+"/"+appSlug), nil)
+// ListServices returns all services in an environment.
+func (c *Client) ListServices(ws, proj, env string) ([]Service, error) {
+	req, err := http.NewRequest("GET", c.apiURL("/workspaces/"+ws+"/projects/"+proj+"/envs/"+env+"/services/"), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -306,20 +420,37 @@ func (c *Client) GetApp(orgSlug, projectSlug, appSlug string) (*App, error) {
 	if err != nil {
 		return nil, err
 	}
-	var app App
-	if err := json.Unmarshal(body, &app); err != nil {
-		return nil, fmt.Errorf("parsing app response: %w", err)
+	var services []Service
+	if err := json.Unmarshal(body, &services); err != nil {
+		return nil, fmt.Errorf("parsing services response: %w", err)
 	}
-	return &app, nil
+	return services, nil
 }
 
-// CreateApp creates a new application under a project.
-func (c *Client) CreateApp(orgSlug, projectSlug, name, platform string) (*App, error) {
+// GetService returns a service by workspace, project, environment, and service slug.
+func (c *Client) GetService(ws, proj, env, svcSlug string) (*Service, error) {
+	req, err := http.NewRequest("GET", c.apiURL("/workspaces/"+ws+"/projects/"+proj+"/envs/"+env+"/services/"+svcSlug), nil)
+	if err != nil {
+		return nil, err
+	}
+	body, err := c.doRequest(req)
+	if err != nil {
+		return nil, err
+	}
+	var svc Service
+	if err := json.Unmarshal(body, &svc); err != nil {
+		return nil, fmt.Errorf("parsing service response: %w", err)
+	}
+	return &svc, nil
+}
+
+// CreateService creates a new service under an environment.
+func (c *Client) CreateService(ws, proj, env, name, platform string) (*Service, error) {
 	payload, _ := json.Marshal(map[string]string{
 		"name":     name,
 		"platform": platform,
 	})
-	req, err := http.NewRequest("POST", c.apiURL("/applications/"+orgSlug+"/"+projectSlug), bytes.NewReader(payload))
+	req, err := http.NewRequest("POST", c.apiURL("/workspaces/"+ws+"/projects/"+proj+"/envs/"+env+"/services/"), bytes.NewReader(payload))
 	if err != nil {
 		return nil, err
 	}
@@ -328,17 +459,17 @@ func (c *Client) CreateApp(orgSlug, projectSlug, name, platform string) (*App, e
 	if err != nil {
 		return nil, err
 	}
-	var app App
-	if err := json.Unmarshal(body, &app); err != nil {
-		return nil, fmt.Errorf("parsing app response: %w", err)
+	var svc Service
+	if err := json.Unmarshal(body, &svc); err != nil {
+		return nil, fmt.Errorf("parsing service response: %w", err)
 	}
-	return &app, nil
+	return &svc, nil
 }
 
-// UpdateApp updates an application.
-func (c *Client) UpdateApp(orgSlug, projectSlug, appSlug string, fields map[string]any) (*App, error) {
+// UpdateService updates a service.
+func (c *Client) UpdateService(ws, proj, env, svcSlug string, fields map[string]any) (*Service, error) {
 	payload, _ := json.Marshal(fields)
-	req, err := http.NewRequest("PATCH", c.apiURL("/applications/"+orgSlug+"/"+projectSlug+"/"+appSlug), bytes.NewReader(payload))
+	req, err := http.NewRequest("PATCH", c.apiURL("/workspaces/"+ws+"/projects/"+proj+"/envs/"+env+"/services/"+svcSlug), bytes.NewReader(payload))
 	if err != nil {
 		return nil, err
 	}
@@ -347,16 +478,16 @@ func (c *Client) UpdateApp(orgSlug, projectSlug, appSlug string, fields map[stri
 	if err != nil {
 		return nil, err
 	}
-	var app App
-	if err := json.Unmarshal(body, &app); err != nil {
-		return nil, fmt.Errorf("parsing app response: %w", err)
+	var svc Service
+	if err := json.Unmarshal(body, &svc); err != nil {
+		return nil, fmt.Errorf("parsing service response: %w", err)
 	}
-	return &app, nil
+	return &svc, nil
 }
 
-// DeleteApp deletes an application.
-func (c *Client) DeleteApp(orgSlug, projectSlug, appSlug string) error {
-	req, err := http.NewRequest("DELETE", c.apiURL("/applications/"+orgSlug+"/"+projectSlug+"/"+appSlug), nil)
+// DeleteService deletes a service.
+func (c *Client) DeleteService(ws, proj, env, svcSlug string) error {
+	req, err := http.NewRequest("DELETE", c.apiURL("/workspaces/"+ws+"/projects/"+proj+"/envs/"+env+"/services/"+svcSlug), nil)
 	if err != nil {
 		return err
 	}
@@ -364,10 +495,10 @@ func (c *Client) DeleteApp(orgSlug, projectSlug, appSlug string) error {
 	return err
 }
 
-// ScaleApp sets process counts for an application.
-func (c *Client) ScaleApp(appID string, processCounts map[string]int) error {
+// ScaleService sets process counts for a service.
+func (c *Client) ScaleService(ws, proj, env, svcSlug string, processCounts map[string]int) error {
 	payload, _ := json.Marshal(map[string]any{"process_counts": processCounts})
-	req, err := http.NewRequest("POST", c.apiURL("/applications/"+appID+"/scale"), bytes.NewReader(payload))
+	req, err := http.NewRequest("POST", c.apiURL("/workspaces/"+ws+"/projects/"+proj+"/envs/"+env+"/services/"+svcSlug+"/scale"), bytes.NewReader(payload))
 	if err != nil {
 		return err
 	}
@@ -378,18 +509,38 @@ func (c *Client) ScaleApp(appID string, processCounts map[string]int) error {
 
 // --- Configuration API ---
 
-// ConfigVar represents a configuration variable for an application.
+// ConfigVar represents a configuration variable with scope.
 type ConfigVar struct {
 	ID        string `json:"id"`
 	Name      string `json:"name"`
 	Value     string `json:"value"`
 	Secret    bool   `json:"secret"`
 	Buildtime bool   `json:"buildtime"`
+	Scope     string `json:"scope"`
 }
 
-// ListConfig returns all configuration variables for an application.
-func (c *Client) ListConfig(appID string) ([]ConfigVar, error) {
-	req, err := http.NewRequest("GET", c.apiURL("/configurations/"+appID), nil)
+// configBasePath returns the API path for config variables based on scope.
+// For "service" scope: /workspaces/{ws}/projects/{proj}/envs/{env}/services/{svc}/config/
+// For "environment" scope: /workspaces/{ws}/projects/{proj}/envs/{env}/config/
+// For "project" scope: /workspaces/{ws}/projects/{proj}/config/
+// For "workspace" scope: /workspaces/{ws}/config/
+func (c *Client) configBasePath(ws, proj, env, svc, scope string) string {
+	switch scope {
+	case "workspace":
+		return "/workspaces/" + ws + "/config/"
+	case "project":
+		return "/workspaces/" + ws + "/projects/" + proj + "/config/"
+	case "environment":
+		return "/workspaces/" + ws + "/projects/" + proj + "/envs/" + env + "/config/"
+	default:
+		// "service" scope is the default.
+		return "/workspaces/" + ws + "/projects/" + proj + "/envs/" + env + "/services/" + svc + "/config/"
+	}
+}
+
+// ListConfig returns all configuration variables at the given scope.
+func (c *Client) ListConfig(ws, proj, env, svc, scope string) ([]ConfigVar, error) {
+	req, err := http.NewRequest("GET", c.apiURL(c.configBasePath(ws, proj, env, svc, scope)), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -405,14 +556,14 @@ func (c *Client) ListConfig(appID string) ([]ConfigVar, error) {
 }
 
 // SetConfig creates or updates a configuration variable.
-func (c *Client) SetConfig(appID, name, value string, secret, buildtime bool) (*ConfigVar, error) {
+func (c *Client) SetConfig(ws, proj, env, svc, scope, name, value string, secret, buildtime bool) (*ConfigVar, error) {
 	payload, _ := json.Marshal(map[string]any{
 		"name":      name,
 		"value":     value,
 		"secret":    secret,
 		"buildtime": buildtime,
 	})
-	req, err := http.NewRequest("POST", c.apiURL("/configurations/"+appID), bytes.NewReader(payload))
+	req, err := http.NewRequest("POST", c.apiURL(c.configBasePath(ws, proj, env, svc, scope)), bytes.NewReader(payload))
 	if err != nil {
 		return nil, err
 	}
@@ -428,9 +579,9 @@ func (c *Client) SetConfig(appID, name, value string, secret, buildtime bool) (*
 	return &cfg, nil
 }
 
-// DeleteConfig deletes a configuration variable by app ID and config ID.
-func (c *Client) DeleteConfig(appID, configID string) error {
-	req, err := http.NewRequest("DELETE", c.apiURL("/configurations/"+appID+"/"+configID), nil)
+// DeleteConfig deletes a configuration variable by ID.
+func (c *Client) DeleteConfig(ws, proj, env, svc, scope, configID string) error {
+	req, err := http.NewRequest("DELETE", c.apiURL(c.configBasePath(ws, proj, env, svc, scope)+configID), nil)
 	if err != nil {
 		return err
 	}

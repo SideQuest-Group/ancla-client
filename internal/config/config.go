@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/spf13/viper"
 )
@@ -19,9 +20,10 @@ type Config struct {
 	Email    string `mapstructure:"email"`
 
 	// Link context — stored in local .ancla/config.yaml only
-	Org     string `mapstructure:"org"`
-	Project string `mapstructure:"project"`
-	App     string `mapstructure:"app"`
+	Workspace string `mapstructure:"workspace"`
+	Project   string `mapstructure:"project"`
+	Env       string `mapstructure:"env"`
+	Service   string `mapstructure:"service"`
 }
 
 // homeConfigDir returns the path to ~/.ancla/.
@@ -86,7 +88,10 @@ func Load() (*Config, error) {
 		local.SetConfigType("yaml")
 		local.AddConfigPath(localDir)
 		if err := local.ReadInConfig(); err == nil {
-			if err := v.MergeConfigMap(local.AllSettings()); err != nil {
+			settings := local.AllSettings()
+			// Auto-migrate old config keys
+			migrateOldKeys(settings)
+			if err := v.MergeConfigMap(settings); err != nil {
 				return nil, fmt.Errorf("merging local config: %w", err)
 			}
 		}
@@ -97,6 +102,29 @@ func Load() (*Config, error) {
 		return nil, fmt.Errorf("parsing config: %w", err)
 	}
 	return &cfg, nil
+}
+
+// migrateOldKeys detects old config keys (org, app) and remaps them to
+// the new names (workspace, service). Modifies the map in place.
+func migrateOldKeys(settings map[string]any) {
+	migrated := false
+	if v, ok := settings["org"]; ok {
+		if _, hasNew := settings["workspace"]; !hasNew {
+			settings["workspace"] = v
+		}
+		delete(settings, "org")
+		migrated = true
+	}
+	if v, ok := settings["app"]; ok {
+		if _, hasNew := settings["service"]; !hasNew {
+			settings["service"] = v
+		}
+		delete(settings, "app")
+		migrated = true
+	}
+	if migrated {
+		fmt.Fprintln(os.Stderr, "warning: migrated old config keys (org→workspace, app→service) — re-run `ancla link` to update")
+	}
 }
 
 // FilePath returns the active config file path. If a local .ancla/ exists
@@ -137,8 +165,9 @@ func Save(cfg *Config) error {
 	return v.WriteConfigAs(path)
 }
 
-// SaveLocal writes link context (org, project, app) to .ancla/config.yaml
-// in the current working directory, creating the directory if needed.
+// SaveLocal writes link context (workspace, project, env, service) to
+// .ancla/config.yaml in the current working directory, creating the
+// directory if needed.
 func SaveLocal(cfg *Config) error {
 	dir, err := os.Getwd()
 	if err != nil {
@@ -149,14 +178,17 @@ func SaveLocal(cfg *Config) error {
 		return fmt.Errorf("creating .ancla directory: %w", err)
 	}
 	v := viper.New()
-	if cfg.Org != "" {
-		v.Set("org", cfg.Org)
+	if cfg.Workspace != "" {
+		v.Set("workspace", cfg.Workspace)
 	}
 	if cfg.Project != "" {
 		v.Set("project", cfg.Project)
 	}
-	if cfg.App != "" {
-		v.Set("app", cfg.App)
+	if cfg.Env != "" {
+		v.Set("env", cfg.Env)
+	}
+	if cfg.Service != "" {
+		v.Set("service", cfg.Service)
 	}
 	path := filepath.Join(localDir, "config.yaml")
 	return v.WriteConfigAs(path)
@@ -179,5 +211,51 @@ func RemoveLocal() error {
 
 // IsLinked returns true if the config has any link context set.
 func (c *Config) IsLinked() bool {
-	return c.Org != "" || c.Project != "" || c.App != ""
+	return c.Workspace != "" || c.Project != "" || c.Env != "" || c.Service != ""
+}
+
+// ServicePath returns the slash-separated path for the linked context
+// (e.g., "my-ws/my-proj/staging/my-svc").
+func (c *Config) ServicePath() string {
+	parts := []string{}
+	if c.Workspace != "" {
+		parts = append(parts, c.Workspace)
+	}
+	if c.Project != "" {
+		parts = append(parts, c.Project)
+	}
+	if c.Env != "" {
+		parts = append(parts, c.Env)
+	}
+	if c.Service != "" {
+		parts = append(parts, c.Service)
+	}
+	return strings.Join(parts, "/")
+}
+
+// ResolveServicePath extracts workspace, project, env, and service from a
+// slash-separated positional argument, falling back to link context for
+// missing segments. Returns an error if required segments are missing.
+func ResolveServicePath(arg string, cfg *Config) (ws, proj, env, svc string, err error) {
+	ws = cfg.Workspace
+	proj = cfg.Project
+	env = cfg.Env
+	svc = cfg.Service
+
+	if arg != "" {
+		parts := strings.Split(arg, "/")
+		if len(parts) >= 1 && parts[0] != "" {
+			ws = parts[0]
+		}
+		if len(parts) >= 2 && parts[1] != "" {
+			proj = parts[1]
+		}
+		if len(parts) >= 3 && parts[2] != "" {
+			env = parts[2]
+		}
+		if len(parts) >= 4 && parts[3] != "" {
+			svc = parts[3]
+		}
+	}
+	return
 }

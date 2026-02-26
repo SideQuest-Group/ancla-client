@@ -12,8 +12,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/sidequest-labs/terraform-provider-ancla/internal/client"
-	datasources "github.com/sidequest-labs/terraform-provider-ancla/internal/resources/datasources"
 	"github.com/sidequest-labs/terraform-provider-ancla/internal/resources"
+	datasources "github.com/sidequest-labs/terraform-provider-ancla/internal/resources/datasources"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -102,17 +102,19 @@ func (p *AnclaProvider) Configure(ctx context.Context, req provider.ConfigureReq
 
 func (p *AnclaProvider) Resources(_ context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
-		resources.NewOrgResource,
+		resources.NewWorkspaceResource,
 		resources.NewProjectResource,
-		resources.NewAppResource,
+		resources.NewEnvironmentResource,
+		resources.NewServiceResource,
 		resources.NewConfigResource,
 	}
 }
 
 func (p *AnclaProvider) DataSources(_ context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
-		datasources.NewOrgDataSource,
+		datasources.NewWorkspaceDataSource,
 		datasources.NewProjectDataSource,
-		datasources.NewAppDataSource,
+		datasources.NewEnvironmentDataSource,
+		datasources.NewServiceDataSource,
 	}
 }

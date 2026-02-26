@@ -1,10 +1,10 @@
 // Package ancla provides a Go client for the Ancla PaaS platform API.
 //
-// Create a client with your API key and call methods to manage organizations,
-// projects, applications, configuration, images, releases, and deployments.
+// Create a client with your API key and call methods to manage workspaces,
+// projects, environments, services, configuration, builds, and deploys.
 //
 //	client := ancla.New("your-api-key")
-//	orgs, err := client.ListOrgs(ctx)
+//	workspaces, err := client.ListWorkspaces(ctx)
 package ancla
 
 import (

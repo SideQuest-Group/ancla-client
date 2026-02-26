@@ -16,7 +16,7 @@ All three SDKs:
 - Authenticate via API key (passed directly or read from `ANCLA_API_KEY` env var)
 - Default to `https://ancla.dev` as the server URL
 - Map HTTP errors to typed exceptions/errors
-- Cover the same resources: orgs, projects, apps, config, images, releases, deployments
+- Cover the same resources: workspaces, projects, environments, services, config vars, builds, deploys
 
 ## Authentication
 

@@ -20,15 +20,16 @@ func init() {
 
 var initCmd = &cobra.Command{
 	Use:   "init",
-	Short: "Link this directory to an Ancla org/project/app",
-	Long: `Initialize (link) the current directory to an Ancla application.
+	Short: "Link this directory to an Ancla workspace/project/env/service",
+	Long: `Initialize (link) the current directory to an Ancla service.
 
-This interactive command walks you through selecting an organization, project,
-and application, then saves the link context to a local .ancla/config.yaml file.
-Subsequent commands run from this directory will automatically use the linked
-org, project, and app without requiring explicit arguments.`,
+This interactive command walks you through selecting a workspace, project,
+environment, and service, then saves the link context to a local
+.ancla/config.yaml file. Subsequent commands run from this directory will
+automatically use the linked workspace, project, env, and service without
+requiring explicit arguments.`,
 	Example: `  ancla init
-  ancla init   # re-link to a different app`,
+  ancla init   # re-link to a different service`,
 	GroupID: "workflow",
 	RunE:    runInit,
 }
@@ -38,7 +39,7 @@ func runInit(cmd *cobra.Command, args []string) error {
 
 	// Step 1: Check if already linked
 	if cfg.IsLinked() {
-		fmt.Printf("This directory is already linked to: %s/%s/%s\n", cfg.Org, cfg.Project, cfg.App)
+		fmt.Printf("This directory is already linked to: %s\n", cfg.ServicePath())
 		fmt.Print("Continue and re-link? [y/N] ")
 		answer, _ := reader.ReadString('\n')
 		answer = strings.TrimSpace(strings.ToLower(answer))
@@ -48,68 +49,76 @@ func runInit(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// Step 2: Fetch and select organization
-	orgSlug, err := selectOrg(reader)
+	// Step 2: Select workspace
+	wsSlug, err := selectWorkspace(reader)
 	if err != nil {
 		return err
 	}
 
-	// Step 3: Fetch and select project
-	projectSlug, err := selectProject(reader, orgSlug)
+	// Step 3: Select project
+	projectSlug, err := selectProject(reader, wsSlug)
 	if err != nil {
 		return err
 	}
 
-	// Step 4: Fetch and select application
-	appSlug, err := selectApp(reader, orgSlug, projectSlug)
+	// Step 4: Select environment
+	envSlug, err := selectEnv(reader, wsSlug, projectSlug)
 	if err != nil {
 		return err
 	}
 
-	// Step 5: Save link context
-	cfg.Org = orgSlug
+	// Step 5: Select service
+	svcSlug, err := selectService(reader, wsSlug, projectSlug, envSlug)
+	if err != nil {
+		return err
+	}
+
+	// Step 6: Save link context
+	cfg.Workspace = wsSlug
 	cfg.Project = projectSlug
-	cfg.App = appSlug
+	cfg.Env = envSlug
+	cfg.Service = svcSlug
 
 	if err := config.SaveLocal(cfg); err != nil {
 		return fmt.Errorf("saving local config: %w", err)
 	}
 
-	// Step 6: Print summary
+	// Step 7: Print summary
 	fmt.Println()
 	fmt.Println("Linked successfully!")
-	fmt.Printf("  Org:     %s\n", orgSlug)
-	fmt.Printf("  Project: %s\n", projectSlug)
-	fmt.Printf("  App:     %s\n", appSlug)
+	fmt.Printf("  Workspace:   %s\n", wsSlug)
+	fmt.Printf("  Project:     %s\n", projectSlug)
+	fmt.Printf("  Environment: %s\n", envSlug)
+	fmt.Printf("  Service:     %s\n", svcSlug)
 	fmt.Println()
 	fmt.Println("Saved to .ancla/config.yaml")
 	return nil
 }
 
-// selectOrg fetches the user's organizations and prompts for a selection.
-func selectOrg(reader *bufio.Reader) (string, error) {
-	req, _ := http.NewRequest("GET", apiURL("/organizations/"), nil)
+// selectWorkspace fetches the user's workspaces and prompts for a selection.
+func selectWorkspace(reader *bufio.Reader) (string, error) {
+	req, _ := http.NewRequest("GET", apiURL("/workspaces/"), nil)
 	body, err := doRequest(req)
 	if err != nil {
-		return "", fmt.Errorf("fetching organizations: %w", err)
+		return "", fmt.Errorf("fetching workspaces: %w", err)
 	}
 
-	var orgs []struct {
+	var workspaces []struct {
 		Name string `json:"name"`
 		Slug string `json:"slug"`
 	}
-	if err := json.Unmarshal(body, &orgs); err != nil {
-		return "", fmt.Errorf("parsing organizations: %w", err)
+	if err := json.Unmarshal(body, &workspaces); err != nil {
+		return "", fmt.Errorf("parsing workspaces: %w", err)
 	}
 
-	if len(orgs) == 0 {
-		return "", fmt.Errorf("no organizations found — create one at %s first", cfg.Server)
+	if len(workspaces) == 0 {
+		return "", fmt.Errorf("no workspaces found — create one at %s first", cfg.Server)
 	}
 
 	fmt.Println()
-	fmt.Println("Select an organization:")
-	for i, o := range orgs {
-		fmt.Printf("  [%d] %s (%s)\n", i+1, o.Name, o.Slug)
+	fmt.Println("Select a workspace:")
+	for i, w := range workspaces {
+		fmt.Printf("  [%d] %s (%s)\n", i+1, w.Name, w.Slug)
 	}
 	fmt.Print("Enter number or slug: ")
 
@@ -118,52 +127,39 @@ func selectOrg(reader *bufio.Reader) (string, error) {
 
 	// Try as number first
 	if n, err := strconv.Atoi(input); err == nil {
-		if n < 1 || n > len(orgs) {
-			return "", fmt.Errorf("invalid selection: %d (must be 1-%d)", n, len(orgs))
+		if n < 1 || n > len(workspaces) {
+			return "", fmt.Errorf("invalid selection: %d (must be 1-%d)", n, len(workspaces))
 		}
-		return orgs[n-1].Slug, nil
+		return workspaces[n-1].Slug, nil
 	}
 
 	// Otherwise treat as slug — verify it exists
-	for _, o := range orgs {
-		if o.Slug == input {
-			return o.Slug, nil
+	for _, w := range workspaces {
+		if w.Slug == input {
+			return w.Slug, nil
 		}
 	}
-	return "", fmt.Errorf("organization %q not found", input)
+	return "", fmt.Errorf("workspace %q not found", input)
 }
 
-// selectProject fetches projects for the given org and prompts for a selection.
-func selectProject(reader *bufio.Reader, orgSlug string) (string, error) {
-	req, _ := http.NewRequest("GET", apiURL("/projects/"), nil)
+// selectProject fetches projects for the given workspace and prompts for a selection.
+func selectProject(reader *bufio.Reader, wsSlug string) (string, error) {
+	req, _ := http.NewRequest("GET", apiURL("/workspaces/"+wsSlug+"/projects/"), nil)
 	body, err := doRequest(req)
 	if err != nil {
 		return "", fmt.Errorf("fetching projects: %w", err)
 	}
 
-	var allProjects []struct {
-		Name             string `json:"name"`
-		Slug             string `json:"slug"`
-		OrganizationSlug string `json:"organization_slug"`
+	var projects []struct {
+		Name string `json:"name"`
+		Slug string `json:"slug"`
 	}
-	if err := json.Unmarshal(body, &allProjects); err != nil {
+	if err := json.Unmarshal(body, &projects); err != nil {
 		return "", fmt.Errorf("parsing projects: %w", err)
 	}
 
-	// Filter to the selected org
-	var projects []struct {
-		Name             string `json:"name"`
-		Slug             string `json:"slug"`
-		OrganizationSlug string `json:"organization_slug"`
-	}
-	for _, p := range allProjects {
-		if p.OrganizationSlug == orgSlug {
-			projects = append(projects, p)
-		}
-	}
-
 	if len(projects) == 0 {
-		return "", fmt.Errorf("no projects found in org %q — create one at %s first", orgSlug, cfg.Server)
+		return "", fmt.Errorf("no projects found in workspace %q — create one at %s first", wsSlug, cfg.Server)
 	}
 
 	fmt.Println()
@@ -188,33 +184,33 @@ func selectProject(reader *bufio.Reader, orgSlug string) (string, error) {
 			return p.Slug, nil
 		}
 	}
-	return "", fmt.Errorf("project %q not found in org %q", input, orgSlug)
+	return "", fmt.Errorf("project %q not found in workspace %q", input, wsSlug)
 }
 
-// selectApp fetches applications for the given org/project and prompts for a selection.
-func selectApp(reader *bufio.Reader, orgSlug, projectSlug string) (string, error) {
-	req, _ := http.NewRequest("GET", apiURL("/applications/"+orgSlug+"/"+projectSlug), nil)
+// selectEnv fetches environments for the given workspace/project and prompts for a selection.
+func selectEnv(reader *bufio.Reader, wsSlug, projectSlug string) (string, error) {
+	req, _ := http.NewRequest("GET", apiURL("/workspaces/"+wsSlug+"/projects/"+projectSlug+"/envs/"), nil)
 	body, err := doRequest(req)
 	if err != nil {
-		return "", fmt.Errorf("fetching applications: %w", err)
+		return "", fmt.Errorf("fetching environments: %w", err)
 	}
 
-	var apps []struct {
+	var envs []struct {
 		Name string `json:"name"`
 		Slug string `json:"slug"`
 	}
-	if err := json.Unmarshal(body, &apps); err != nil {
-		return "", fmt.Errorf("parsing applications: %w", err)
+	if err := json.Unmarshal(body, &envs); err != nil {
+		return "", fmt.Errorf("parsing environments: %w", err)
 	}
 
-	if len(apps) == 0 {
-		return "", fmt.Errorf("no applications found in %s/%s — create one at %s first", orgSlug, projectSlug, cfg.Server)
+	if len(envs) == 0 {
+		return "", fmt.Errorf("no environments found in %s/%s — create one at %s first", wsSlug, projectSlug, cfg.Server)
 	}
 
 	fmt.Println()
-	fmt.Println("Select an application:")
-	for i, a := range apps {
-		fmt.Printf("  [%d] %s (%s)\n", i+1, a.Name, a.Slug)
+	fmt.Println("Select an environment:")
+	for i, e := range envs {
+		fmt.Printf("  [%d] %s (%s)\n", i+1, e.Name, e.Slug)
 	}
 	fmt.Print("Enter number or slug: ")
 
@@ -222,16 +218,61 @@ func selectApp(reader *bufio.Reader, orgSlug, projectSlug string) (string, error
 	input = strings.TrimSpace(input)
 
 	if n, err := strconv.Atoi(input); err == nil {
-		if n < 1 || n > len(apps) {
-			return "", fmt.Errorf("invalid selection: %d (must be 1-%d)", n, len(apps))
+		if n < 1 || n > len(envs) {
+			return "", fmt.Errorf("invalid selection: %d (must be 1-%d)", n, len(envs))
 		}
-		return apps[n-1].Slug, nil
+		return envs[n-1].Slug, nil
 	}
 
-	for _, a := range apps {
-		if a.Slug == input {
-			return a.Slug, nil
+	for _, e := range envs {
+		if e.Slug == input {
+			return e.Slug, nil
 		}
 	}
-	return "", fmt.Errorf("application %q not found in %s/%s", input, orgSlug, projectSlug)
+	return "", fmt.Errorf("environment %q not found in %s/%s", input, wsSlug, projectSlug)
+}
+
+// selectService fetches services for the given workspace/project/env and prompts for a selection.
+func selectService(reader *bufio.Reader, wsSlug, projectSlug, envSlug string) (string, error) {
+	req, _ := http.NewRequest("GET", apiURL("/workspaces/"+wsSlug+"/projects/"+projectSlug+"/envs/"+envSlug+"/services/"), nil)
+	body, err := doRequest(req)
+	if err != nil {
+		return "", fmt.Errorf("fetching services: %w", err)
+	}
+
+	var services []struct {
+		Name string `json:"name"`
+		Slug string `json:"slug"`
+	}
+	if err := json.Unmarshal(body, &services); err != nil {
+		return "", fmt.Errorf("parsing services: %w", err)
+	}
+
+	if len(services) == 0 {
+		return "", fmt.Errorf("no services found in %s/%s/%s — create one at %s first", wsSlug, projectSlug, envSlug, cfg.Server)
+	}
+
+	fmt.Println()
+	fmt.Println("Select a service:")
+	for i, s := range services {
+		fmt.Printf("  [%d] %s (%s)\n", i+1, s.Name, s.Slug)
+	}
+	fmt.Print("Enter number or slug: ")
+
+	input, _ := reader.ReadString('\n')
+	input = strings.TrimSpace(input)
+
+	if n, err := strconv.Atoi(input); err == nil {
+		if n < 1 || n > len(services) {
+			return "", fmt.Errorf("invalid selection: %d (must be 1-%d)", n, len(services))
+		}
+		return services[n-1].Slug, nil
+	}
+
+	for _, s := range services {
+		if s.Slug == input {
+			return s.Slug, nil
+		}
+	}
+	return "", fmt.Errorf("service %q not found in %s/%s/%s", input, wsSlug, projectSlug, envSlug)
 }

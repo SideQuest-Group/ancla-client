@@ -53,16 +53,16 @@ func TestAPIKeyHeader(t *testing.T) {
 	defer ts.Close()
 
 	c := newTestClient(t, ts)
-	_, _ = c.ListOrgs(context.Background())
+	_, _ = c.ListWorkspaces(context.Background())
 	if gotKey != "test-api-key" {
 		t.Errorf("expected X-API-Key %q, got %q", "test-api-key", gotKey)
 	}
 }
 
-// --- Org CRUD tests ---
+// --- Workspace CRUD tests ---
 
-func TestListOrgs(t *testing.T) {
-	orgs := []Org{
+func TestListWorkspaces(t *testing.T) {
+	workspaces := []Workspace{
 		{ID: "1", Name: "Acme", Slug: "acme", MemberCount: 3, ProjectCount: 2},
 		{ID: "2", Name: "Beta", Slug: "beta", MemberCount: 1, ProjectCount: 0},
 	}
@@ -70,45 +70,45 @@ func TestListOrgs(t *testing.T) {
 		if r.Method != "GET" {
 			t.Errorf("expected GET, got %s", r.Method)
 		}
-		if r.URL.Path != "/api/v1/organizations/" {
+		if r.URL.Path != "/api/v1/workspaces/" {
 			t.Errorf("unexpected path %s", r.URL.Path)
 		}
-		json.NewEncoder(w).Encode(orgs)
+		json.NewEncoder(w).Encode(workspaces)
 	}))
 	defer ts.Close()
 
 	c := newTestClient(t, ts)
-	result, err := c.ListOrgs(context.Background())
+	result, err := c.ListWorkspaces(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
 	if len(result) != 2 {
-		t.Fatalf("expected 2 orgs, got %d", len(result))
+		t.Fatalf("expected 2 workspaces, got %d", len(result))
 	}
 	if result[0].Slug != "acme" {
 		t.Errorf("expected slug %q, got %q", "acme", result[0].Slug)
 	}
 }
 
-func TestGetOrg(t *testing.T) {
-	org := Org{
+func TestGetWorkspace(t *testing.T) {
+	ws := Workspace{
 		Name:         "Acme",
 		Slug:         "acme",
 		ProjectCount: 5,
-		Members: []OrgMember{
+		Members: []WorkspaceMember{
 			{Username: "alice", Email: "alice@example.com", Admin: true},
 		},
 	}
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/api/v1/organizations/acme" {
+		if r.URL.Path != "/api/v1/workspaces/acme" {
 			t.Errorf("unexpected path %s", r.URL.Path)
 		}
-		json.NewEncoder(w).Encode(org)
+		json.NewEncoder(w).Encode(ws)
 	}))
 	defer ts.Close()
 
 	c := newTestClient(t, ts)
-	result, err := c.GetOrg(context.Background(), "acme")
+	result, err := c.GetWorkspace(context.Background(), "acme")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -123,47 +123,47 @@ func TestGetOrg(t *testing.T) {
 	}
 }
 
-func TestCreateOrg(t *testing.T) {
+func TestCreateWorkspace(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "POST" {
 			t.Errorf("expected POST, got %s", r.Method)
 		}
-		if r.URL.Path != "/api/v1/organizations/" {
+		if r.URL.Path != "/api/v1/workspaces/" {
 			t.Errorf("unexpected path %s", r.URL.Path)
 		}
-		var body CreateOrgRequest
+		var body CreateWorkspaceRequest
 		json.NewDecoder(r.Body).Decode(&body)
-		if body.Name != "New Org" {
-			t.Errorf("expected name %q, got %q", "New Org", body.Name)
+		if body.Name != "New Workspace" {
+			t.Errorf("expected name %q, got %q", "New Workspace", body.Name)
 		}
-		json.NewEncoder(w).Encode(Org{ID: "3", Name: "New Org", Slug: "new-org"})
+		json.NewEncoder(w).Encode(Workspace{ID: "3", Name: "New Workspace", Slug: "new-workspace"})
 	}))
 	defer ts.Close()
 
 	c := newTestClient(t, ts)
-	result, err := c.CreateOrg(context.Background(), "New Org")
+	result, err := c.CreateWorkspace(context.Background(), "New Workspace")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if result.Slug != "new-org" {
-		t.Errorf("expected slug %q, got %q", "new-org", result.Slug)
+	if result.Slug != "new-workspace" {
+		t.Errorf("expected slug %q, got %q", "new-workspace", result.Slug)
 	}
 }
 
-func TestUpdateOrg(t *testing.T) {
+func TestUpdateWorkspace(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "PATCH" {
 			t.Errorf("expected PATCH, got %s", r.Method)
 		}
-		if r.URL.Path != "/api/v1/organizations/acme" {
+		if r.URL.Path != "/api/v1/workspaces/acme" {
 			t.Errorf("unexpected path %s", r.URL.Path)
 		}
-		json.NewEncoder(w).Encode(Org{Name: "Acme Corp", Slug: "acme"})
+		json.NewEncoder(w).Encode(Workspace{Name: "Acme Corp", Slug: "acme"})
 	}))
 	defer ts.Close()
 
 	c := newTestClient(t, ts)
-	result, err := c.UpdateOrg(context.Background(), "acme", "Acme Corp")
+	result, err := c.UpdateWorkspace(context.Background(), "acme", "Acme Corp")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -172,12 +172,12 @@ func TestUpdateOrg(t *testing.T) {
 	}
 }
 
-func TestDeleteOrg(t *testing.T) {
+func TestDeleteWorkspace(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "DELETE" {
 			t.Errorf("expected DELETE, got %s", r.Method)
 		}
-		if r.URL.Path != "/api/v1/organizations/acme" {
+		if r.URL.Path != "/api/v1/workspaces/acme" {
 			t.Errorf("unexpected path %s", r.URL.Path)
 		}
 		w.WriteHeader(204)
@@ -185,9 +185,108 @@ func TestDeleteOrg(t *testing.T) {
 	defer ts.Close()
 
 	c := newTestClient(t, ts)
-	err := c.DeleteOrg(context.Background(), "acme")
+	err := c.DeleteWorkspace(context.Background(), "acme")
 	if err != nil {
 		t.Fatal(err)
+	}
+}
+
+// --- Service and Config tests ---
+
+func TestListServices(t *testing.T) {
+	services := []Service{
+		{Name: "Web", Slug: "web", Platform: "docker"},
+	}
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/v1/workspaces/acme/projects/myproj/envs/production/services/" {
+			t.Errorf("unexpected path %s", r.URL.Path)
+		}
+		json.NewEncoder(w).Encode(services)
+	}))
+	defer ts.Close()
+
+	c := newTestClient(t, ts)
+	result, err := c.ListServices(context.Background(), "acme", "myproj", "production")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(result) != 1 || result[0].Slug != "web" {
+		t.Errorf("unexpected result: %+v", result)
+	}
+}
+
+func TestScaleService(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "POST" {
+			t.Errorf("expected POST, got %s", r.Method)
+		}
+		if r.URL.Path != "/api/v1/workspaces/acme/projects/myproj/envs/production/services/svc123/scale" {
+			t.Errorf("unexpected path %s", r.URL.Path)
+		}
+		var body ScaleRequest
+		json.NewDecoder(r.Body).Decode(&body)
+		if body.ProcessCounts["web"] != 3 {
+			t.Errorf("expected web=3, got %d", body.ProcessCounts["web"])
+		}
+		w.WriteHeader(200)
+	}))
+	defer ts.Close()
+
+	c := newTestClient(t, ts)
+	err := c.ScaleService(context.Background(), "acme", "myproj", "production", "svc123", map[string]int{"web": 3})
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestSetConfig(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "POST" {
+			t.Errorf("expected POST, got %s", r.Method)
+		}
+		if r.URL.Path != "/api/v1/workspaces/acme/projects/myproj/envs/production/services/web/config/" {
+			t.Errorf("unexpected path %s", r.URL.Path)
+		}
+		var body SetConfigRequest
+		json.NewDecoder(r.Body).Decode(&body)
+		if body.Name != "DB_URL" || body.Value != "postgres://localhost" {
+			t.Errorf("unexpected body: %+v", body)
+		}
+		json.NewEncoder(w).Encode(ConfigVar{ID: "c1", Name: "DB_URL", Value: "postgres://localhost"})
+	}))
+	defer ts.Close()
+
+	c := newTestClient(t, ts)
+	result, err := c.SetConfig(context.Background(), "acme", "myproj", "production", "web", "DB_URL", "postgres://localhost", false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Name != "DB_URL" {
+		t.Errorf("expected name %q, got %q", "DB_URL", result.Name)
+	}
+}
+
+func TestGetDeploy(t *testing.T) {
+	dpl := Deploy{
+		ID:       "dep-1",
+		Complete: true,
+		Created:  "2025-01-01T00:00:00Z",
+	}
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/v1/deploys/dep-1/detail" {
+			t.Errorf("unexpected path %s", r.URL.Path)
+		}
+		json.NewEncoder(w).Encode(dpl)
+	}))
+	defer ts.Close()
+
+	c := newTestClient(t, ts)
+	result, err := c.GetDeploy(context.Background(), "dep-1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !result.Complete {
+		t.Error("expected deploy to be complete")
 	}
 }
 
@@ -200,7 +299,7 @@ func TestError401(t *testing.T) {
 	defer ts.Close()
 
 	c := newTestClient(t, ts)
-	_, err := c.ListOrgs(context.Background())
+	_, err := c.ListWorkspaces(context.Background())
 	if err == nil {
 		t.Fatal("expected error")
 	}
@@ -216,7 +315,7 @@ func TestError404(t *testing.T) {
 	defer ts.Close()
 
 	c := newTestClient(t, ts)
-	_, err := c.GetOrg(context.Background(), "missing")
+	_, err := c.GetWorkspace(context.Background(), "missing")
 	if err == nil {
 		t.Fatal("expected error")
 	}
@@ -232,7 +331,7 @@ func TestError500(t *testing.T) {
 	defer ts.Close()
 
 	c := newTestClient(t, ts)
-	_, err := c.ListOrgs(context.Background())
+	_, err := c.ListWorkspaces(context.Background())
 	if err == nil {
 		t.Fatal("expected error")
 	}
@@ -259,7 +358,7 @@ func TestErrorCustomMessage(t *testing.T) {
 	defer ts.Close()
 
 	c := newTestClient(t, ts)
-	_, err := c.ListOrgs(context.Background())
+	_, err := c.ListWorkspaces(context.Background())
 	if err == nil {
 		t.Fatal("expected error")
 	}
@@ -272,105 +371,6 @@ func TestErrorCustomMessage(t *testing.T) {
 	}
 	if apiErr.Message != "validation failed" {
 		t.Errorf("expected message %q, got %q", "validation failed", apiErr.Message)
-	}
-}
-
-// --- App and Config tests ---
-
-func TestListApps(t *testing.T) {
-	apps := []App{
-		{Name: "Web", Slug: "web", Platform: "docker"},
-	}
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/api/v1/applications/acme/myproj" {
-			t.Errorf("unexpected path %s", r.URL.Path)
-		}
-		json.NewEncoder(w).Encode(apps)
-	}))
-	defer ts.Close()
-
-	c := newTestClient(t, ts)
-	result, err := c.ListApps(context.Background(), "acme", "myproj")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(result) != 1 || result[0].Slug != "web" {
-		t.Errorf("unexpected result: %+v", result)
-	}
-}
-
-func TestScaleApp(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != "POST" {
-			t.Errorf("expected POST, got %s", r.Method)
-		}
-		if r.URL.Path != "/api/v1/applications/app123/scale" {
-			t.Errorf("unexpected path %s", r.URL.Path)
-		}
-		var body ScaleRequest
-		json.NewDecoder(r.Body).Decode(&body)
-		if body.ProcessCounts["web"] != 3 {
-			t.Errorf("expected web=3, got %d", body.ProcessCounts["web"])
-		}
-		w.WriteHeader(200)
-	}))
-	defer ts.Close()
-
-	c := newTestClient(t, ts)
-	err := c.ScaleApp(context.Background(), "app123", map[string]int{"web": 3})
-	if err != nil {
-		t.Fatal(err)
-	}
-}
-
-func TestSetConfig(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != "POST" {
-			t.Errorf("expected POST, got %s", r.Method)
-		}
-		if r.URL.Path != "/api/v1/configurations/app123" {
-			t.Errorf("unexpected path %s", r.URL.Path)
-		}
-		var body SetConfigRequest
-		json.NewDecoder(r.Body).Decode(&body)
-		if body.Name != "DB_URL" || body.Value != "postgres://localhost" {
-			t.Errorf("unexpected body: %+v", body)
-		}
-		json.NewEncoder(w).Encode(ConfigVar{ID: "c1", Name: "DB_URL", Value: "postgres://localhost"})
-	}))
-	defer ts.Close()
-
-	c := newTestClient(t, ts)
-	result, err := c.SetConfig(context.Background(), "app123", "DB_URL", "postgres://localhost", false)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if result.Name != "DB_URL" {
-		t.Errorf("expected name %q, got %q", "DB_URL", result.Name)
-	}
-}
-
-func TestGetDeployment(t *testing.T) {
-	dpl := Deployment{
-		ID:       "dep-1",
-		Complete: true,
-		Created:  "2025-01-01T00:00:00Z",
-	}
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/api/v1/deployments/dep-1/detail" {
-			t.Errorf("unexpected path %s", r.URL.Path)
-		}
-		json.NewEncoder(w).Encode(dpl)
-	}))
-	defer ts.Close()
-
-	c := newTestClient(t, ts)
-	result, err := c.GetDeployment(context.Background(), "dep-1")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !result.Complete {
-		t.Error("expected deployment to be complete")
 	}
 }
 

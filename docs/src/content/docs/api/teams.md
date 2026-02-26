@@ -1,62 +1,75 @@
 ---
-title: Teams
-description: API reference for managing teams within organizations.
+title: "Teams"
+description: API reference for teams endpoints.
 ---
 
-Teams are groups of users within an organization. Config variables can be scoped to a team, sitting between org-level and project-level in the configuration hierarchy.
+<!-- Auto-generated from openapi.json — do not edit manually -->
 
-## List teams
+## List Teams
 
 ```http
-GET /orgs/{org}/teams/
+GET /workspaces/{workspace}/teams
 ```
 
-### Response
+**Path parameters:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `workspace` | string |  |
+
+**Response:**
 
 ```json
 [
-  {
-    "id": "uuid",
-    "name": "Backend",
-    "slug": "backend"
-  }
+  {}
 ]
 ```
 
-## Create a team
+
+## List Config
 
 ```http
-POST /orgs/{org}/teams/
+GET /workspaces/{workspace}/teams/{team}/config
 ```
 
-### Request body
+**Path parameters:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `workspace` | string |  |
+| `team` | string |  |
+
+**Response:**
 
 ```json
-{
-  "name": "Backend"
-}
+[
+  {}
+]
 ```
 
-## Team configuration
 
-### List team config
+## Create Team
 
 ```http
-GET /orgs/{org}/teams/{team}/config
+POST /workspaces/{workspace}/teams
 ```
 
-### Set a team config variable
+**Path parameters:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `workspace` | string |  |
+
+
+## Create Config
 
 ```http
-POST /orgs/{org}/teams/{team}/config
+POST /workspaces/{workspace}/teams/{team}/config
 ```
 
-```json
-{
-  "name": "SHARED_SECRET",
-  "value": "team-shared-value",
-  "secret": true
-}
-```
+**Path parameters:**
 
-Team-level config variables are inherited by all projects and services that belong to the team, and can be overridden at the project, environment, or service level.
+| Name | Type | Description |
+|------|------|-------------|
+| `workspace` | string |  |
+| `team` | string |  |

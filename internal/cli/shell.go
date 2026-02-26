@@ -9,6 +9,8 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+
+	"github.com/SideQuest-Group/ancla-client/internal/config"
 )
 
 func init() {
@@ -18,35 +20,38 @@ func init() {
 }
 
 var shellCmd = &cobra.Command{
-	Use:   "shell [app-path]",
+	Use:   "shell [ws/proj/env/svc]",
 	Short: "Open an interactive shell in a running container",
-	Long: `Open an interactive shell session in a running application container.
+	Long: `Open an interactive shell session in a running service container.
 
-Uses the linked app context or an explicit org/project/app path. Unlike ssh,
+Uses the linked context or an explicit ws/proj/env/svc path. Unlike ssh,
 this command uses the platform exec API directly and does not require SSH keys.`,
 	Example: `  ancla shell
-  ancla shell my-org/my-project/my-app
+  ancla shell my-ws/my-proj/staging/my-svc
   ancla shell -p worker
   ancla shell -c /bin/bash`,
 	GroupID: "workflow",
 	Args:    cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		appPath := ""
+		var arg string
 		if len(args) == 1 {
-			appPath = args[0]
-		} else if cfg.Org != "" && cfg.Project != "" && cfg.App != "" {
-			appPath = cfg.Org + "/" + cfg.Project + "/" + cfg.App
+			arg = args[0]
 		}
-		if appPath == "" {
-			return fmt.Errorf("no app specified — provide an argument or run `ancla link` first")
+		ws, proj, env, svc, err := config.ResolveServicePath(arg, cfg)
+		if err != nil {
+			return err
+		}
+		if ws == "" || proj == "" || env == "" || svc == "" {
+			return fmt.Errorf("no service specified — provide an argument or run `ancla link` first")
 		}
 
 		process, _ := cmd.Flags().GetString("process")
 		command, _ := cmd.Flags().GetString("command")
 
 		// Request an exec session from the API
+		svcPath := "/workspaces/" + ws + "/projects/" + proj + "/envs/" + env + "/services/" + svc
 		payload := fmt.Sprintf(`{"process":"%s","command":"%s"}`, process, command)
-		req, _ := http.NewRequest("POST", apiURL("/applications/"+appPath+"/exec"), strings.NewReader(payload))
+		req, _ := http.NewRequest("POST", apiURL(svcPath+"/exec"), strings.NewReader(payload))
 		req.Header.Set("Content-Type", "application/json")
 
 		stop := spin("Connecting...")

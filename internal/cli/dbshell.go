@@ -8,6 +8,8 @@ import (
 	"os/exec"
 
 	"github.com/spf13/cobra"
+
+	"github.com/SideQuest-Group/ancla-client/internal/config"
 )
 
 func init() {
@@ -15,30 +17,33 @@ func init() {
 }
 
 var dbshellCmd = &cobra.Command{
-	Use:   "dbshell [app-path]",
-	Short: "Open an interactive database shell for the app",
-	Long: `Open an interactive database shell for the linked application.
+	Use:   "dbshell [ws/proj/env/svc]",
+	Short: "Open an interactive database shell for the service",
+	Long: `Open an interactive database shell for the linked service.
 
-Connects to the application's primary database using credentials from the
+Connects to the service's primary database using credentials from the
 platform. Automatically detects the database type (PostgreSQL, MySQL) and
 launches the appropriate client (psql, mysql).`,
 	Example: `  ancla dbshell
-  ancla dbshell my-org/my-project/my-app`,
+  ancla dbshell my-ws/my-proj/staging/my-svc`,
 	GroupID: "workflow",
 	Args:    cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		appPath := ""
+		var arg string
 		if len(args) == 1 {
-			appPath = args[0]
-		} else if cfg.Org != "" && cfg.Project != "" && cfg.App != "" {
-			appPath = cfg.Org + "/" + cfg.Project + "/" + cfg.App
+			arg = args[0]
 		}
-		if appPath == "" {
-			return fmt.Errorf("no app specified — provide an argument or run `ancla link` first")
+		ws, proj, env, svc, err := config.ResolveServicePath(arg, cfg)
+		if err != nil {
+			return err
+		}
+		if ws == "" || proj == "" || env == "" || svc == "" {
+			return fmt.Errorf("no service specified — provide an argument or run `ancla link` first")
 		}
 
 		// Fetch database connection info from the API
-		req, _ := http.NewRequest("GET", apiURL("/applications/"+appPath+"/database"), nil)
+		svcPath := "/workspaces/" + ws + "/projects/" + proj + "/envs/" + env + "/services/" + svc
+		req, _ := http.NewRequest("GET", apiURL(svcPath+"/database"), nil)
 		stop := spin("Fetching database credentials...")
 		body, err := doRequest(req)
 		stop()
