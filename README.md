@@ -4,6 +4,18 @@ CLI client for the [Ancla](https://ancla.dev) deployment platform.
 
 ## Installation
 
+### Quick install (recommended)
+
+```bash
+curl -LsSf https://ancla.dev/install.sh | sh
+```
+
+Pin a specific version:
+
+```bash
+curl -LsSf https://ancla.dev/install.sh | sh -s -- --version v0.5.0
+```
+
 ### Go
 
 ```bash
@@ -13,9 +25,9 @@ go install github.com/SideQuest-Group/ancla-client/cmd/ancla@latest
 ### Python / uv
 
 ```bash
-pip install ancla
+pip install ancla-cli
 # or
-uv tool install ancla
+uv tool install ancla-cli
 ```
 
 ### GitHub Releases

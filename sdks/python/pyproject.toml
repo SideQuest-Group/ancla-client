@@ -18,7 +18,27 @@ dependencies = [
 dev = [
     "pytest>=8",
     "pytest-httpx>=0.34",
+    "ruff>=0.9",
 ]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/ancla"]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 120
+
+[tool.ruff.lint]
+select = [
+    "E",     # pycodestyle errors
+    "W",     # pycodestyle warnings
+    "F",     # pyflakes
+    "I",     # isort
+    "UP",    # pyupgrade
+    "B",     # flake8-bugbear
+    "SIM",   # flake8-simplify
+    "RUF",   # ruff-specific
+]
+
+[tool.ruff.format]
+quote-style = "double"

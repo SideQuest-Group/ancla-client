@@ -4,7 +4,7 @@ LDFLAGS  = -s -w \
            -X github.com/SideQuest-Group/ancla-client/internal/cli.Version=$(VERSION) \
            -X github.com/SideQuest-Group/ancla-client/internal/cli.Commit=$(COMMIT)
 
-.PHONY: build install test vet fmt clean sync-openapi docs docs-dev docs-serve docs-gen
+.PHONY: build install test vet fmt fmt-check lint clean sync-openapi docs docs-dev docs-serve docs-gen
 
 build: ## Build the ancla binary
 	go build -ldflags '$(LDFLAGS)' -o dist/ancla ./cmd/ancla
@@ -20,6 +20,11 @@ vet: ## Run go vet
 
 fmt: ## Format code
 	gofmt -w .
+
+fmt-check: ## Check formatting (CI)
+	@test -z "$$(gofmt -l .)" || (echo "Files need formatting:" && gofmt -l . && exit 1)
+
+lint: vet fmt-check ## Run all linting checks
 
 clean: ## Remove build artifacts
 	rm -rf dist/
