@@ -7,7 +7,7 @@ Three official SDKs wrap the Ancla REST API. Pick the one that fits your stack.
 
 | SDK | Package | Install |
 |-----|---------|---------|
-| [Python](/sdk/python/) | `ancla-sdk` | `pip install ancla-sdk` |
+| [Python](/sdk/python/) | `ancla-sdk` | `uv add ancla-sdk` |
 | [Go](/sdk/go/) | `github.com/sidequest-labs/ancla-go` | `go get github.com/sidequest-labs/ancla-go` |
 | [TypeScript](/sdk/typescript/) | `@ancla/sdk` | `npm install @ancla/sdk` |
 

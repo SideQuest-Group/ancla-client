@@ -3,52 +3,75 @@ title: Shell Completion
 description: Set up tab completion for the Ancla CLI in your shell.
 ---
 
-The Ancla CLI supports tab completion for commands, subcommands, and flags.
+import { Tabs, TabItem } from '@astrojs/starlight/components';
 
-## Bash
+The Ancla CLI supports tab completion for commands, subcommands, flags, and dynamic values like org and project slugs.
 
-```bash
-# Load for current session
-source <(ancla completion bash)
+## Setup
 
-# Load permanently
-ancla completion bash > /etc/bash_completion.d/ancla
-# Or for a single user:
-ancla completion bash > ~/.local/share/bash-completion/completions/ancla
-```
+<Tabs>
+  <TabItem label="Zsh">
+    Load for the current session:
 
-## Zsh
+    ```zsh
+    source <(ancla completion zsh)
+    ```
 
-```zsh
-# Load for current session
-source <(ancla completion zsh)
+    Load permanently (add to an fpath directory):
 
-# Load permanently (add to an fpath directory)
-ancla completion zsh > "${fpath[1]}/_ancla"
-```
+    ```zsh
+    ancla completion zsh > "${fpath[1]}/_ancla"
+    ```
 
-If completions aren't working, ensure `compinit` is called in your `.zshrc`:
+    If completions aren't working, make sure `compinit` is called in your `.zshrc`:
 
-```zsh
-autoload -Uz compinit && compinit
-```
+    ```zsh
+    autoload -Uz compinit && compinit
+    ```
+  </TabItem>
+  <TabItem label="Bash">
+    Load for the current session:
 
-## Fish
+    ```bash
+    source <(ancla completion bash)
+    ```
 
-```fish
-# Load for current session
-ancla completion fish | source
+    Load permanently:
 
-# Load permanently
-ancla completion fish > ~/.config/fish/completions/ancla.fish
-```
+    ```bash
+    ancla completion bash > /etc/bash_completion.d/ancla
+    ```
 
-## PowerShell
+    Or for a single user:
 
-```powershell
-# Load for current session
-ancla completion powershell | Out-String | Invoke-Expression
+    ```bash
+    ancla completion bash > ~/.local/share/bash-completion/completions/ancla
+    ```
+  </TabItem>
+  <TabItem label="Fish">
+    Load for the current session:
 
-# Load permanently (add to your profile)
-ancla completion powershell >> $PROFILE
-```
+    ```fish
+    ancla completion fish | source
+    ```
+
+    Load permanently:
+
+    ```fish
+    ancla completion fish > ~/.config/fish/completions/ancla.fish
+    ```
+  </TabItem>
+  <TabItem label="PowerShell">
+    Load for the current session:
+
+    ```powershell
+    ancla completion powershell | Out-String | Invoke-Expression
+    ```
+
+    Load permanently (add to your profile):
+
+    ```powershell
+    ancla completion powershell >> $PROFILE
+    ```
+  </TabItem>
+</Tabs>
