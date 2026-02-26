@@ -1,9 +1,9 @@
 ---
 title: Ancla
-description: Documentation for the Ancla deployment platform — CLI, API, SDK, and OpenTofu provider.
+description: Documentation for the Ancla deployment platform — CLI, REST API, SDKs, and Terraform provider.
 template: splash
 hero:
-  tagline: Ship fast. Sleep well. — CLI, API, SDK, and infrastructure-as-code for the Ancla platform.
+  tagline: Ship fast. Sleep well. — CLI, API, SDKs, and infrastructure-as-code for the Ancla platform.
   actions:
     - text: Get Started
       link: /guides/getting-started/
@@ -18,15 +18,21 @@ import { Card, CardGrid } from '@astrojs/starlight/components';
 
 <CardGrid stagger>
   <Card title="CLI" icon="laptop">
-    Install the `ancla` command-line tool to deploy and manage applications from your terminal.
+    Install the `ancla` command-line tool to deploy, monitor, and manage applications from your terminal.
   </Card>
   <Card title="REST API" icon="open-book">
     Integrate directly with the Ancla API — full reference for every endpoint.
   </Card>
   <Card title="Python SDK" icon="seti:python">
-    Programmatic access to Ancla from Python applications and scripts.
+    Programmatic access from Python using `ancla-sdk` — httpx + Pydantic under the hood.
   </Card>
-  <Card title="OpenTofu Provider" icon="puzzle">
-    Manage Ancla resources with infrastructure-as-code.
+  <Card title="Go SDK" icon="seti:go">
+    Zero-dependency Go client at `github.com/sidequest-labs/ancla-go`.
+  </Card>
+  <Card title="TypeScript SDK" icon="seti:typescript">
+    Native fetch-based client for Node.js and the browser via `@ancla/sdk`.
+  </Card>
+  <Card title="Terraform Provider" icon="puzzle">
+    Manage Ancla resources with infrastructure-as-code using the `sidequest-labs/ancla` provider.
   </Card>
 </CardGrid>

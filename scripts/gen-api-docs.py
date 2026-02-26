@@ -22,10 +22,16 @@ TAG_META = {
     "Organizations": ("organizations", "Organizations"),
     "Projects": ("projects", "Projects"),
     "Applications": ("applications", "Applications"),
+    "Environments": ("environments", "Environments"),
+    "Services": ("services", "Services"),
     "Images": ("images", "Images"),
     "Releases": ("releases", "Releases"),
     "Deployments": ("deployments", "Deployments"),
     "Configurations": ("configuration", "Configuration"),
+    "Pipeline": ("pipeline", "Pipeline"),
+    "Promotions": ("promotions", "Promotions"),
+    "Observability": ("observability", "Observability"),
+    "Teams": ("teams", "Teams"),
     "Integrations": ("integrations", "Integrations"),
 }
 
@@ -226,9 +232,19 @@ def main():
 
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    # Remove old generated API docs (keep index.md if hand-written)
+    # Determine which files will be generated so we can remove stale ones.
+    generated_slugs = set()
+    for tag in by_tag:
+        slug, _ = TAG_META.get(tag, (tag.lower(), tag))
+        generated_slugs.add(f"{slug}.md")
+
+    # Remove stale generated files, but keep index.md and hand-written pages.
     for f in out_dir.glob("*.md"):
-        if f.name != "index.md":
+        if f.name == "index.md":
+            continue
+        # Only remove files that are auto-generated (contain the marker comment).
+        content = f.read_text()
+        if "Auto-generated from openapi.json" in content:
             f.unlink()
 
     count = 0

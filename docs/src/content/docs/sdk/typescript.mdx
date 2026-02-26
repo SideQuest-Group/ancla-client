@@ -1,0 +1,204 @@
+---
+title: TypeScript SDK
+description: The @ancla/sdk package — install, configure, and use from Node.js or the browser.
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+## Install
+
+<Tabs>
+  <TabItem label="npm">
+    ```bash
+    npm install @ancla/sdk
+    ```
+  </TabItem>
+  <TabItem label="pnpm">
+    ```bash
+    pnpm add @ancla/sdk
+    ```
+  </TabItem>
+  <TabItem label="bun">
+    ```bash
+    bun add @ancla/sdk
+    ```
+  </TabItem>
+  <TabItem label="yarn">
+    ```bash
+    yarn add @ancla/sdk
+    ```
+  </TabItem>
+</Tabs>
+
+The package ships as ESM with full TypeScript type declarations. No runtime dependencies; uses native `fetch`.
+
+## Create a client
+
+```typescript
+import { AnclaClient } from "@ancla/sdk";
+
+const client = new AnclaClient({ apiKey: "ancla_your_key_here" });
+```
+
+If you skip `apiKey`, the client reads `process.env.ANCLA_API_KEY`. To point at a different server:
+
+```typescript
+const client = new AnclaClient({
+  apiKey: "ancla_your_key_here",
+  server: "https://ancla.example.com",
+});
+```
+
+All methods are async and return promises.
+
+## Organizations
+
+```typescript
+const orgs = await client.listOrgs();
+// Org[]
+
+const org = await client.getOrg("my-org");
+// OrgDetail — includes members array
+
+const newOrg = await client.createOrg("New Org");
+
+const updated = await client.updateOrg("my-org", "Renamed Org");
+
+await client.deleteOrg("old-org");
+```
+
+## Projects
+
+```typescript
+const projects = await client.listProjects("my-org");
+
+const project = await client.getProject("my-org", "my-project");
+
+const newProject = await client.createProject("my-org", "New Project");
+
+const updated = await client.updateProject("my-org", "my-project", "Renamed");
+
+await client.deleteProject("my-org", "old-project");
+```
+
+## Applications
+
+```typescript
+const apps = await client.listApps("my-org", "my-project");
+
+const app = await client.getApp("my-org", "my-project", "api-service");
+// AppDetail — includes process_counts, github_repository, etc.
+
+const newApp = await client.createApp("my-org", "my-project", "Worker", "docker");
+
+const updated = await client.updateApp("my-org", "my-project", "api-service", {
+  name: "Renamed",
+  auto_deploy_branch: "main",
+});
+
+await client.deleteApp("my-org", "my-project", "old-app");
+```
+
+### Deploy and scale
+
+Deploy and scale take app IDs (UUIDs), not slug paths:
+
+```typescript
+const result = await client.deployApp("app-uuid");
+console.log(result.image_id);
+
+await client.scaleApp("app-uuid", { web: 2, worker: 1 });
+
+const status = await client.getAppStatus("app-uuid");
+console.log(status.build?.status); // "complete"
+```
+
+## Configuration
+
+Config methods also take app IDs:
+
+```typescript
+const vars = await client.listConfig("app-uuid");
+
+const v = await client.getConfig("app-uuid", "config-uuid");
+
+await client.setConfig("app-uuid", "DATABASE_URL", "postgres://localhost/mydb", {
+  secret: true,
+});
+
+await client.deleteConfig("app-uuid", "config-uuid");
+```
+
+## Images
+
+```typescript
+const imageList = await client.listImages("app-uuid");
+// ImageList with .items array
+
+const image = await client.getImage("image-uuid");
+```
+
+## Releases
+
+```typescript
+const releaseList = await client.listReleases("app-uuid");
+// ReleaseList with .items array
+
+const release = await client.getRelease("release-uuid");
+
+const result = await client.createRelease("app-uuid");
+console.log(result.release_id, result.version);
+```
+
+## Deployments
+
+```typescript
+const deployment = await client.getDeployment("deployment-uuid");
+console.log(deployment.complete, deployment.error);
+```
+
+## Error handling
+
+The SDK throws typed errors for API failures:
+
+```typescript
+import {
+  AnclaError,
+  AuthenticationError,
+  NotFoundError,
+  ValidationError,
+  ServerError,
+} from "@ancla/sdk";
+
+try {
+  await client.getOrg("nonexistent");
+} catch (e) {
+  if (e instanceof NotFoundError) {
+    console.log("Not found:", e.message);
+  } else if (e instanceof AuthenticationError) {
+    console.log("Bad API key");
+  } else if (e instanceof AnclaError) {
+    console.log("API error:", e.statusCode, e.message);
+  }
+}
+```
+
+| Error class | HTTP status |
+|-------------|-------------|
+| `AuthenticationError` | 401 |
+| `NotFoundError` | 404 |
+| `ValidationError` | 422 |
+| `ServerError` | 500+ |
+| `AnclaError` | Everything else |
+
+All errors extend `AnclaError`, which carries `statusCode`, `message`, and `responseBody` (the raw response text).
+
+## Types
+
+All types are exported from `@ancla/sdk`:
+
+**Resources:** `Org`, `OrgDetail`, `OrgMember`, `Project`, `ProjectDetail`, `App`, `AppDetail`, `ConfigVar`, `Image`, `ImageList`, `Release`, `ReleaseList`, `Deployment`, `PipelineStatus`
+
+**Options:** `AnclaClientOptions`, `UpdateAppOptions`, `SetConfigOptions`
+
+**Responses:** `DeployResult`, `CreateReleaseResult`

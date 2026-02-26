@@ -1,0 +1,199 @@
+---
+title: Python SDK
+description: The ancla-sdk package for Python — install, configure, and use.
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+## Install
+
+Requires Python 3.10+.
+
+<Tabs>
+  <TabItem label="uv">
+    ```bash
+    uv add ancla-sdk
+    ```
+  </TabItem>
+  <TabItem label="pip">
+    ```bash
+    pip install ancla-sdk
+    ```
+  </TabItem>
+</Tabs>
+
+## Create a client
+
+```python
+from ancla import AnclaClient
+
+client = AnclaClient(api_key="ancla_your_key_here")
+```
+
+If you skip `api_key`, the client reads `ANCLA_API_KEY` from the environment. To point at a different server:
+
+```python
+client = AnclaClient(
+    api_key="ancla_your_key_here",
+    server="https://ancla.example.com",
+    timeout=60.0,
+)
+```
+
+The client works as a context manager and closes its HTTP connection pool on exit:
+
+```python
+with AnclaClient() as client:
+    orgs = client.list_orgs()
+```
+
+## Organizations
+
+```python
+orgs = client.list_orgs()
+# [Org(name="My Org", slug="my-org", member_count=3, ...)]
+
+org = client.get_org("my-org")
+
+new_org = client.create_org("New Org")
+
+updated = client.update_org("my-org", "Renamed Org")
+
+client.delete_org("old-org")
+```
+
+## Projects
+
+```python
+projects = client.list_projects("my-org")
+
+project = client.get_project("my-org", "my-project")
+
+new_project = client.create_project("my-org", "New Project")
+
+updated = client.update_project("my-org", "my-project", "Renamed")
+
+client.delete_project("my-org", "old-project")
+```
+
+## Applications
+
+```python
+apps = client.list_apps("my-org", "my-project")
+
+app = client.get_app("my-org", "my-project", "api-service")
+
+new_app = client.create_app("my-org", "my-project", "Worker", "docker")
+
+updated = client.update_app(
+    "my-org", "my-project", "api-service",
+    name="Renamed Service",
+    auto_deploy_branch="main",
+)
+
+client.delete_app("my-org", "my-project", "old-app")
+```
+
+### Deploy and scale
+
+```python
+result = client.deploy_app("my-org", "my-project", "api-service")
+print(result.image_id)
+
+client.scale_app(
+    "my-org", "my-project", "api-service",
+    counts={"web": 2, "worker": 1},
+)
+```
+
+## Configuration
+
+```python
+config_vars = client.list_config("my-org", "my-project", "api-service")
+
+var = client.get_config("my-org", "my-project", "api-service", "DATABASE_URL")
+
+client.set_config(
+    "my-org", "my-project", "api-service",
+    key="DATABASE_URL",
+    value="postgres://localhost/mydb",
+    secret=True,
+)
+
+client.delete_config("my-org", "my-project", "api-service", "OLD_VAR")
+```
+
+## Images
+
+```python
+images = client.list_images("my-org", "my-project", "api-service")
+# Returns a list of Image objects
+
+image = client.get_image("my-org", "my-project", "api-service", "image-uuid")
+```
+
+## Releases
+
+```python
+releases = client.list_releases("my-org", "my-project", "api-service")
+
+release = client.get_release("my-org", "my-project", "api-service", "release-uuid")
+
+result = client.create_release("my-org", "my-project", "api-service", image_id="image-uuid")
+print(result.release_id, result.version)
+```
+
+## Deployments
+
+```python
+deployments = client.list_deployments("my-org", "my-project", "api-service")
+
+deployment = client.get_deployment("my-org", "my-project", "api-service", "deploy-uuid")
+print(deployment.complete, deployment.error)
+```
+
+## Error handling
+
+The SDK raises typed exceptions for API errors:
+
+```python
+from ancla import (
+    AnclaError,
+    AuthenticationError,
+    NotFoundError,
+    ValidationError,
+    ServerError,
+)
+
+try:
+    client.get_org("nonexistent")
+except NotFoundError as e:
+    print(f"Not found: {e}")
+except AuthenticationError:
+    print("Bad API key")
+except AnclaError as e:
+    print(f"API error {e.status_code}: {e}")
+```
+
+All exceptions inherit from `AnclaError` and carry `status_code` and `detail` attributes.
+
+| Exception | HTTP Status |
+|-----------|-------------|
+| `AuthenticationError` | 401 |
+| `NotFoundError` | 404 |
+| `ValidationError` | 422 |
+| `ServerError` | 500+ |
+| `AnclaError` | Everything else |
+
+## Models
+
+All methods return Pydantic models. You can access attributes directly or serialize to dict/JSON:
+
+```python
+org = client.get_org("my-org")
+print(org.slug)
+print(org.model_dump())        # dict
+print(org.model_dump_json())   # JSON string
+```
+
+Full list of models: `Org`, `OrgMember`, `Project`, `App`, `ConfigVar`, `Image`, `Release`, `Deployment`, `DeployResult`, `CreateReleaseResult`, `DeployReleaseResult`.

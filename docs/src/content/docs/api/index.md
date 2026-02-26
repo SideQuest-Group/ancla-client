@@ -23,16 +23,23 @@ Or use session-based auth via the login endpoint.
 
 ## Resources
 
-| Resource | Endpoints | Description |
-|----------|-----------|-------------|
-| [Authentication](/api/authentication/) | 6 | Session, login, logout, CLI auth, OAuth |
-| [Organizations](/api/organizations/) | 6 | Manage orgs and members |
-| [Projects](/api/projects/) | 3 | Create and list projects |
-| [Applications](/api/applications/) | 10 | CRUD, scaling, deploy, pipeline status |
-| [Images](/api/images/) | 4 | Build and inspect container images |
-| [Releases](/api/releases/) | 5 | Create releases and trigger deploys |
-| [Deployments](/api/deployments/) | 2 | Inspect deployment status and logs |
-| [Configuration](/api/configuration/) | 6 | Manage environment variables |
+| Resource | Description |
+|----------|-------------|
+| [Authentication](/api/authentication/) | Session, login, logout, CLI auth, OAuth |
+| [Organizations](/api/organizations/) | Manage orgs, members, and org-level config |
+| [Projects](/api/projects/) | Create and manage projects within orgs |
+| [Applications](/api/applications/) | CRUD, scaling, deploy, pipeline status |
+| [Environments](/api/environments/) | Deployment targets (production, staging, preview) |
+| [Services](/api/services/) | Deployable units within environments |
+| [Images](/api/images/) | Build and inspect container images |
+| [Releases](/api/releases/) | Create releases and trigger deploys |
+| [Deployments](/api/deployments/) | Inspect deployment status and logs |
+| [Configuration](/api/configuration/) | Manage environment variables at every scope |
+| [Pipeline](/api/pipeline/) | Pipeline status, metrics, deploy, rollback |
+| [Promotions](/api/promotions/) | Promote releases between environments |
+| [Observability](/api/observability/) | CPU, memory, and pod metrics |
+| [Teams](/api/teams/) | Team management and team-scoped config |
+| [Integrations](/api/integrations/) | Docker auth, GitHub webhooks, signing certs |
 
 ## Error responses
 

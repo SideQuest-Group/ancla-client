@@ -1,0 +1,114 @@
+---
+title: Getting Started
+description: Install the Ancla CLI and deploy your first application.
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+## Installation
+
+<Tabs>
+  <TabItem label="uv">
+    ```bash
+    uv tool install ancla-cli
+    ```
+
+    Or run without installing:
+
+    ```bash
+    uvx ancla
+    ```
+  </TabItem>
+  <TabItem label="pip">
+    ```bash
+    pip install ancla-cli
+    ```
+  </TabItem>
+  <TabItem label="Binary">
+    Download from [GitHub Releases](https://github.com/SideQuest-Group/ancla-client/releases):
+
+    <Tabs>
+      <TabItem label="macOS (Apple Silicon)">
+        ```bash
+        curl -Lo ancla https://github.com/SideQuest-Group/ancla-client/releases/latest/download/ancla_darwin_arm64
+        chmod +x ancla
+        sudo mv ancla /usr/local/bin/
+        ```
+      </TabItem>
+      <TabItem label="macOS (Intel)">
+        ```bash
+        curl -Lo ancla https://github.com/SideQuest-Group/ancla-client/releases/latest/download/ancla_darwin_amd64
+        chmod +x ancla
+        sudo mv ancla /usr/local/bin/
+        ```
+      </TabItem>
+      <TabItem label="Linux (amd64)">
+        ```bash
+        curl -Lo ancla https://github.com/SideQuest-Group/ancla-client/releases/latest/download/ancla_linux_amd64
+        chmod +x ancla
+        sudo mv ancla /usr/local/bin/
+        ```
+      </TabItem>
+    </Tabs>
+  </TabItem>
+  <TabItem label="Go">
+    Requires Go 1.24+.
+
+    ```bash
+    go install github.com/SideQuest-Group/ancla-client/cmd/ancla@latest
+    ```
+  </TabItem>
+</Tabs>
+
+## Quick start
+
+### 1. Log in
+
+```bash
+ancla login
+```
+
+This opens your browser for authentication. See the [Authentication guide](/guides/authentication/) for CI and manual options.
+
+### 2. List your organizations
+
+```bash
+ancla orgs list
+```
+
+### 3. List projects
+
+```bash
+ancla projects list --org my-org
+```
+
+### 4. Deploy an application
+
+```bash
+ancla apps deploy my-org/my-project/my-app
+```
+
+### 5. Check deployment status
+
+```bash
+ancla apps status my-org/my-project/my-app
+```
+
+### 6. Link your project directory
+
+```bash
+ancla link my-org/my-project/my-app
+```
+
+Now commands like `status`, `logs`, `run`, and `down` know what app you're working on without extra arguments. See [Project Linking](/guides/project-linking/) for details.
+
+## Next steps
+
+- [Project Linking](/guides/project-linking/) — link your directory to skip typing org/project/app on every command
+- [Development Workflow](/guides/dev-workflow/) — deploy, monitor, run locally, scale, and tear down
+- [Remote Access](/guides/remote-access/) — SSH, database shell, cache management
+- [Scripting & Automation](/guides/scripting/) — JSON output, quiet mode, CI/CD patterns
+- [Authentication](/guides/authentication/) — browser login, manual keys, CI setup
+- [Configuration](/guides/configuration/) — config files, env vars, precedence
+- [Shell Completion](/guides/shell-completion/) — tab completion for your shell
+- [CLI Reference](/cli/ancla/) — full command documentation
