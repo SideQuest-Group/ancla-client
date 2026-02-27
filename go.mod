@@ -3,15 +3,16 @@ module github.com/SideQuest-Group/ancla-client
 go 1.24.0
 
 require (
+	github.com/BurntSushi/toml v1.6.0
+	github.com/briandowns/spinner v1.23.2
+	github.com/fatih/color v1.18.0
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/viper v1.19.0
 	golang.org/x/term v0.40.0
 )
 
 require (
-	github.com/briandowns/spinner v1.23.2 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.4 // indirect
-	github.com/fatih/color v1.18.0 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
