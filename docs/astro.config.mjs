@@ -145,6 +145,10 @@ export default defineConfig({
             { label: "Overview", slug: "opentofu" },
           ],
         },
+        {
+          label: "Competitive Landscape",
+          slug: "competitive-landscape",
+        },
       ],
     }),
   ],

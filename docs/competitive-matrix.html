@@ -1,0 +1,1198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ancla — Competitive Landscape</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=JetBrains+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg-root: #0d0f12;
+    --bg-surface: #131619;
+    --bg-elevated: #191d22;
+    --bg-hover: #23282e;
+    --border-subtle: #23282e;
+    --border-muted: #3d454d;
+    --text-muted: #6e7a84;
+    --text-secondary: #b0bac2;
+    --text-primary: #e0e6eb;
+    --accent: #0891b2;
+    --accent-bright: #22d3ee;
+    --accent-brighter: #67e8f9;
+    --accent-dim: #0c2e38;
+    --accent-glow: rgba(34, 211, 238, 0.08);
+    --green: #34d399;
+    --green-dim: #0a2e1f;
+    --yellow: #fbbf24;
+    --yellow-dim: #2e2508;
+    --red: #f87171;
+    --red-dim: #2e0a0a;
+    --orange: #fb923c;
+    --orange-dim: #2e1a08;
+    --purple: #a78bfa;
+    --purple-dim: #1a0e2e;
+    --font-body: 'DM Sans', system-ui, sans-serif;
+    --font-display: 'Instrument Serif', Georgia, serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+    --radius: 10px;
+    --radius-sm: 6px;
+    --radius-lg: 16px;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg-root);
+    color: var(--text-primary);
+    font-family: var(--font-body);
+    font-size: 15px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ═══════════ Noise Overlay ═══════════ */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  /* ═══════════ Layout ═══════════ */
+  .container { max-width: 1340px; margin: 0 auto; padding: 0 32px; }
+
+  section { padding: 80px 0; }
+  section + section { border-top: 1px solid var(--border-subtle); }
+
+  /* ═══════════ Hero ═══════════ */
+  .hero {
+    padding: 100px 0 80px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -200px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 900px;
+    height: 600px;
+    background: radial-gradient(ellipse at center, rgba(8, 145, 178, 0.12) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .hero-logo {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 40px;
+  }
+
+  .hero-logo svg { width: 36px; height: 36px; }
+
+  .hero-logo span {
+    font-family: var(--font-mono);
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--accent-bright);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .hero h1 {
+    font-family: var(--font-display);
+    font-size: clamp(48px, 6vw, 80px);
+    font-weight: 400;
+    line-height: 1.05;
+    color: var(--text-primary);
+    margin-bottom: 20px;
+  }
+
+  .hero h1 em {
+    font-style: italic;
+    color: var(--accent-bright);
+  }
+
+  .hero-sub {
+    font-size: 17px;
+    color: var(--text-muted);
+    max-width: 560px;
+    margin-bottom: 40px;
+  }
+
+  .hero-meta {
+    display: flex;
+    gap: 24px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text-muted);
+    letter-spacing: 0.04em;
+  }
+
+  .hero-meta span { opacity: 0.7; }
+
+  /* ═══════════ Section headers ═══════════ */
+  .section-label {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 12px;
+  }
+
+  .section-title {
+    font-family: var(--font-display);
+    font-size: clamp(32px, 4vw, 48px);
+    font-weight: 400;
+    line-height: 1.15;
+    margin-bottom: 16px;
+  }
+
+  .section-desc {
+    color: var(--text-muted);
+    max-width: 600px;
+    margin-bottom: 48px;
+    font-size: 16px;
+  }
+
+  /* ═══════════ Platform Cards ═══════════ */
+  .platform-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+  }
+
+  .platform-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius);
+    padding: 24px;
+    transition: border-color 0.2s, background 0.2s;
+    position: relative;
+  }
+
+  .platform-card:hover {
+    border-color: var(--border-muted);
+    background: var(--bg-elevated);
+  }
+
+  .platform-card.is-ancla {
+    border-color: var(--accent);
+    background: var(--accent-glow);
+  }
+
+  .platform-card.is-ancla::before {
+    content: 'YOU';
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    font-family: var(--font-mono);
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    color: var(--accent-bright);
+    background: var(--accent-dim);
+    padding: 3px 8px;
+    border-radius: 4px;
+  }
+
+  .platform-card h3 {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+
+  .platform-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.03em;
+    padding: 3px 10px;
+    border-radius: 20px;
+    margin-bottom: 12px;
+  }
+
+  .platform-status.active { background: var(--green-dim); color: var(--green); }
+  .platform-status.sustaining { background: var(--yellow-dim); color: var(--yellow); }
+
+  .platform-status::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  .platform-desc {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.5;
+  }
+
+  /* ═══════════ Tabs ═══════════ */
+  .tab-nav {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+    margin-bottom: 32px;
+    background: var(--bg-surface);
+    border-radius: var(--radius);
+    padding: 6px;
+    border: 1px solid var(--border-subtle);
+  }
+
+  .tab-btn {
+    font-family: var(--font-body);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-muted);
+    background: transparent;
+    border: none;
+    padding: 8px 16px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+
+  .tab-btn:hover { color: var(--text-secondary); background: var(--bg-hover); }
+
+  .tab-btn.active {
+    color: var(--accent-bright);
+    background: var(--accent-dim);
+  }
+
+  .tab-panel { display: none; animation: fadeIn 0.25s ease; }
+  .tab-panel.active { display: block; }
+
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* ═══════════ Tables ═══════════ */
+  .table-wrap {
+    overflow-x: auto;
+    border-radius: var(--radius);
+    border: 1px solid var(--border-subtle);
+    background: var(--bg-surface);
+    -webkit-overflow-scrolling: touch;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    min-width: 800px;
+  }
+
+  thead th {
+    position: sticky;
+    top: 0;
+    background: var(--bg-elevated);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    text-align: left;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border-subtle);
+    white-space: nowrap;
+  }
+
+  thead th:first-child { min-width: 200px; }
+
+  thead th.col-ancla {
+    color: var(--accent-bright);
+    background: linear-gradient(180deg, rgba(8, 145, 178, 0.08) 0%, var(--bg-elevated) 100%);
+  }
+
+  tbody td {
+    padding: 12px 16px;
+    border-bottom: 1px solid rgba(35, 40, 46, 0.5);
+    vertical-align: middle;
+  }
+
+  tbody tr:last-child td { border-bottom: none; }
+
+  tbody tr:hover td { background: rgba(34, 211, 238, 0.02); }
+
+  td:first-child {
+    font-weight: 500;
+    color: var(--text-secondary);
+    white-space: nowrap;
+  }
+
+  td.col-ancla { background: rgba(8, 145, 178, 0.04); }
+
+  /* ═══════════ Badges ═══════════ */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 500;
+    padding: 3px 9px;
+    border-radius: 4px;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+  }
+
+  .badge-y { background: var(--green-dim); color: var(--green); }
+  .badge-n { background: var(--red-dim); color: var(--red); opacity: 0.6; }
+  .badge-p { background: var(--yellow-dim); color: var(--yellow); }
+  .badge-e { background: var(--purple-dim); color: var(--purple); }
+  .badge-3p { background: rgba(251, 146, 60, 0.1); color: var(--orange); }
+
+  .badge-detail {
+    font-family: var(--font-body);
+    font-size: 10px;
+    color: var(--text-muted);
+    font-weight: 400;
+  }
+
+  /* ═══════════ Pricing Cards ═══════════ */
+  .pricing-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 16px;
+    margin-bottom: 48px;
+  }
+
+  .price-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius);
+    padding: 28px 24px;
+    transition: border-color 0.2s, transform 0.15s;
+  }
+
+  .price-card:hover { border-color: var(--border-muted); transform: translateY(-2px); }
+
+  .price-card.is-ancla {
+    border-color: var(--accent);
+    background: linear-gradient(135deg, var(--accent-glow) 0%, var(--bg-surface) 100%);
+  }
+
+  .price-card-name {
+    font-weight: 600;
+    font-size: 16px;
+    margin-bottom: 4px;
+  }
+
+  .price-card-amount {
+    font-family: var(--font-display);
+    font-size: 36px;
+    line-height: 1.1;
+    margin: 12px 0 4px;
+  }
+
+  .price-card-amount small {
+    font-family: var(--font-body);
+    font-size: 14px;
+    color: var(--text-muted);
+    font-weight: 400;
+  }
+
+  .price-card-desc {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.5;
+  }
+
+  .price-card-model {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-subtle);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: 0.03em;
+  }
+
+  /* ═══════════ Gap Analysis ═══════════ */
+  .gap-list { display: flex; flex-direction: column; gap: 12px; }
+
+  .gap-item {
+    display: grid;
+    grid-template-columns: 56px 1fr;
+    gap: 16px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius);
+    padding: 20px 24px;
+    transition: border-color 0.2s;
+  }
+
+  .gap-item:hover { border-color: var(--border-muted); }
+
+  .gap-priority {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    padding: 6px 0;
+    text-align: center;
+    border-radius: var(--radius-sm);
+    height: fit-content;
+  }
+
+  .gap-priority.p1 { background: var(--red-dim); color: var(--red); }
+  .gap-priority.p2 { background: var(--yellow-dim); color: var(--yellow); }
+  .gap-priority.p3 { background: var(--bg-hover); color: var(--text-muted); }
+
+  .gap-content h4 { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+  .gap-content p { font-size: 13px; color: var(--text-muted); line-height: 1.5; }
+
+  .gap-who {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 8px;
+  }
+
+  .gap-who span {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 3px;
+    background: var(--bg-hover);
+    color: var(--text-muted);
+  }
+
+  /* ═══════════ Advantages ═══════════ */
+  .adv-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 16px;
+  }
+
+  .adv-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--accent-dim);
+    border-radius: var(--radius);
+    padding: 24px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+
+  .adv-card:hover { border-color: var(--accent); }
+
+  .adv-card::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent-bright), var(--accent));
+  }
+
+  .adv-card h4 {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--accent-bright);
+    margin-bottom: 8px;
+  }
+
+  .adv-card p {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.55;
+  }
+
+  /* ═══════════ Nav dots (side) ═══════════ */
+  .side-nav {
+    position: fixed;
+    right: 24px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    z-index: 100;
+  }
+
+  .side-nav a {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--border-muted);
+    transition: all 0.2s;
+    display: block;
+  }
+
+  .side-nav a:hover, .side-nav a.active {
+    background: var(--accent-bright);
+    box-shadow: 0 0 8px rgba(34, 211, 238, 0.4);
+    transform: scale(1.3);
+  }
+
+  /* ═══════════ Responsive ═══════════ */
+  @media (max-width: 768px) {
+    .container { padding: 0 16px; }
+    section { padding: 48px 0; }
+    .hero { padding: 60px 0 48px; }
+    .side-nav { display: none; }
+    .tab-nav { overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; }
+    .platform-grid { grid-template-columns: 1fr; }
+    .pricing-grid { grid-template-columns: 1fr; }
+    .gap-item { grid-template-columns: 48px 1fr; }
+  }
+
+  /* ═══════════ Scrollbar ═══════════ */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border-muted); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+</style>
+</head>
+<body>
+
+<!-- Side nav dots -->
+<nav class="side-nav">
+  <a href="#hero" title="Top"></a>
+  <a href="#context" title="Strategic Context"></a>
+  <a href="#features" title="Features"></a>
+  <a href="#pricing" title="Pricing"></a>
+  <a href="#gaps" title="Gap Analysis"></a>
+  <a href="#advantages" title="Advantages"></a>
+</nav>
+
+<!-- ═══════════════ HERO ═══════════════ -->
+<header class="hero" id="hero">
+  <div class="container">
+    <div class="hero-logo">
+      <svg viewBox="0 0 64 64" fill="#22d3ee"><path fill-rule="evenodd" d="M32 2a7 7 0 1 0 0 14 7 7 0 0 0 0-14zm0 3a4 4 0 1 1 0 8 4 4 0 0 1 0-8z"/><rect x="30" y="15" width="4" height="38" rx="2"/><rect x="12" y="23" width="40" height="5" rx="2.5"/><path d="M30 49 C22 56 8 52 6 40 L12 36 C14 46 24 50 30 45Z"/><path d="M34 49 C42 56 56 52 58 40 L52 36 C50 46 40 50 34 45Z"/><path d="M30 53 L32 60 L34 53Z"/></svg>
+      <span>Ancla</span>
+    </div>
+    <h1>Competitive<br><em>Landscape</em></h1>
+    <p class="hero-sub">Feature and pricing analysis across 7 PaaS platforms. Cross-verified against primary sources.</p>
+    <div class="hero-meta">
+      <span>February 2026</span>
+      <span>&middot;</span>
+      <span>7 Platforms</span>
+      <span>&middot;</span>
+      <span>13 Feature Categories</span>
+      <span>&middot;</span>
+      <span>100+ Data Points</span>
+    </div>
+  </div>
+</header>
+
+<!-- ═══════════════ STRATEGIC CONTEXT ═══════════════ -->
+<section id="context">
+  <div class="container">
+    <p class="section-label">Market Overview</p>
+    <h2 class="section-title">Strategic Context</h2>
+    <p class="section-desc">The PaaS landscape is shifting. Heroku is in maintenance mode, Railway just raised $100M, and Vercel dominates serverless. Here's where everyone stands.</p>
+    <div class="platform-grid">
+      <div class="platform-card is-ancla">
+        <h3>Ancla</h3>
+        <div class="platform-status active">Active Development</div>
+        <p class="platform-desc">K8s-based PaaS with Vault-backed secrets, Consul service discovery, BuildKit builds. Full Terraform provider and multi-SDK ecosystem.</p>
+      </div>
+      <div class="platform-card">
+        <h3>Fly.io</h3>
+        <div class="platform-status active">Active</div>
+        <p class="platform-desc">Firecracker microVM-based, edge-first, multi-region by default. 18 regions, per-second billing.</p>
+      </div>
+      <div class="platform-card">
+        <h3>Railway</h3>
+        <div class="platform-status active">Active &mdash; $100M Series B</div>
+        <p class="platform-desc">Developer-first PaaS on own metal infrastructure. Usage-based pricing with vertical autoscaling. 4 regions.</p>
+      </div>
+      <div class="platform-card">
+        <h3>Vercel</h3>
+        <div class="platform-status active">Active</div>
+        <p class="platform-desc">Frontend/serverless-first with 126+ PoPs. Framework-optimized builds, Fluid Compute model, edge functions.</p>
+      </div>
+      <div class="platform-card">
+        <h3>Northflank</h3>
+        <div class="platform-status active">Active</div>
+        <p class="platform-desc">K8s-based IDP with BYOC/BYOK. Enterprise-oriented with GPU support (L4/A100/H100+), custom roles, release flows.</p>
+      </div>
+      <div class="platform-card">
+        <h3>Render</h3>
+        <div class="platform-status active">Active</div>
+        <p class="platform-desc">Simple PaaS with Git-push deploys. Broad service types including static sites, cron jobs, background workers. 5 regions.</p>
+      </div>
+      <div class="platform-card">
+        <h3>Heroku</h3>
+        <div class="platform-status sustaining">Sustaining Mode</div>
+        <p class="platform-desc">Classic PaaS now in maintenance mode (Feb 2026). No new features. Enterprise sales halted for new customers. Fir generation GA but frozen.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ FEATURE MATRIX ═══════════════ -->
+<section id="features">
+  <div class="container">
+    <p class="section-label">Comparison</p>
+    <h2 class="section-title">Feature Matrix</h2>
+    <p class="section-desc">Detailed feature-by-feature comparison across 13 categories. Ancla column highlighted.</p>
+
+    <nav class="tab-nav" role="tablist">
+      <button class="tab-btn active" data-tab="deploy" role="tab">Deploy &amp; Build</button>
+      <button class="tab-btn" data-tab="scaling" role="tab">Scaling</button>
+      <button class="tab-btn" data-tab="networking" role="tab">Networking</button>
+      <button class="tab-btn" data-tab="data" role="tab">Data Services</button>
+      <button class="tab-btn" data-tab="secrets" role="tab">Secrets &amp; Config</button>
+      <button class="tab-btn" data-tab="cicd" role="tab">CI/CD Pipeline</button>
+      <button class="tab-btn" data-tab="rollback" role="tab">Rollback</button>
+      <button class="tab-btn" data-tab="access" role="tab">Container Access</button>
+      <button class="tab-btn" data-tab="observability" role="tab">Observability</button>
+      <button class="tab-btn" data-tab="team" role="tab">Team &amp; RBAC</button>
+      <button class="tab-btn" data-tab="infra" role="tab">Infrastructure</button>
+      <button class="tab-btn" data-tab="dx" role="tab">Dev Experience</button>
+      <button class="tab-btn" data-tab="iac" role="tab">IaC &amp; SDKs</button>
+    </nav>
+
+    <!-- ── Deploy & Build ── -->
+    <div class="tab-panel active" data-panel="deploy" role="tabpanel">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Feature</th><th class="col-ancla">Ancla</th><th>Fly.io</th><th>Railway</th><th>Vercel</th><th>Northflank</th><th>Render</th><th>Heroku</th></tr></thead>
+          <tbody>
+            <tr><td>Git push deploy</td><td class="col-ancla"><span class="badge badge-y">Y</span> <span class="badge-detail">GitHub App</span></td><td><span class="badge badge-n">N</span> <span class="badge-detail">CLI only</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td></tr>
+            <tr><td>CLI deploy</td><td class="col-ancla"><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span> <span class="badge-detail">primary</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td></tr>
+            <tr><td>Docker/image deploy</td><td class="col-ancla"><span class="badge badge-n">N</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span> <span class="badge-detail">Cedar</span></td></tr>
+            <tr><td>Buildpacks</td><td class="col-ancla"><span class="badge badge-n">N</span></td><td><span class="badge badge-p">P</span> <span class="badge-detail">discouraged</span></td><td><span class="badge badge-y">Y</span> <span class="badge-detail">Railpack</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-y">Y</span> <span class="badge-detail">CNB</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-y">Y</span> <span class="badge-detail">primary</span></td></tr>
+            <tr><td>Dockerfile builds</td><td class="col-ancla"><span class="badge badge-y">Y</span> <span class="badge-detail">BuildKit</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span> <span class="badge-detail">Cedar</span></td></tr>
+            <tr><td>Framework auto-detect</td><td class="col-ancla"><span class="badge badge-p">P</span> <span class="badge-detail">Python only</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span> <span class="badge-detail">best-in-class</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td></tr>
+            <tr><td>Monorepo support</td><td class="col-ancla"><span class="badge badge-n">N</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-p">P</span> <span class="badge-detail">root dir</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span> <span class="badge-detail">build filters</span></td><td><span class="badge badge-n">N</span> <span class="badge-detail">Fir</span></td></tr>
+            <tr><td>Build caching</td><td class="col-ancla"><span class="badge badge-n">N</span> <span class="badge-detail">unclear</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td></tr>
+            <tr><td>Build-time secrets</td><td class="col-ancla"><span class="badge badge-y">Y</span> <span class="badge-detail">BuildKit mounts</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-p">P</span> <span class="badge-detail">Labs</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td></tr>
+            <tr><td>Pre-built image deploy</td><td class="col-ancla"><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── Scaling ── -->
+    <div class="tab-panel" data-panel="scaling" role="tabpanel">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Feature</th><th class="col-ancla">Ancla</th><th>Fly.io</th><th>Railway</th><th>Vercel</th><th>Northflank</th><th>Render</th><th>Heroku</th></tr></thead>
+          <tbody>
+            <tr><td>Manual horizontal scaling</td><td class="col-ancla"><span class="badge badge-y">Y</span> <span class="badge-detail">per process</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-n">N</span> <span class="badge-detail">auto only</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td></tr>
+            <tr><td>Autoscaling (metrics)</td><td class="col-ancla"><span class="badge badge-n">N</span></td><td><span class="badge badge-p">P</span> <span class="badge-detail">separate app</span></td><td><span class="badge badge-n">N</span> <span class="badge-detail">vertical only</span></td><td><span class="badge badge-y">Y</span> <span class="badge-detail">automatic</span></td><td><span class="badge badge-y">Y</span> <span class="badge-detail">CPU/mem/RPS</span></td><td><span class="badge badge-y">Y</span> <span class="badge-detail">Pro+</span></td><td><span class="badge badge-p">P</span> <span class="badge-detail">Perf only</span></td></tr>
+            <tr><td>Scale-to-zero</td><td class="col-ancla"><span class="badge badge-n">N</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span> <span class="badge-detail">opt-in</span></td><td><span class="badge badge-y">Y</span> <span class="badge-detail">serverless</span></td><td><span class="badge badge-n">N</span> <span class="badge-detail">marketing only</span></td><td><span class="badge badge-p">P</span> <span class="badge-detail">free tier</span></td><td><span class="badge badge-p">P</span> <span class="badge-detail">Eco sleep</span></td></tr>
+            <tr><td>Per-process-type scaling</td><td class="col-ancla"><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-y">Y</span></td></tr>
+            <tr><td>Vertical scaling</td><td class="col-ancla"><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span> <span class="badge-detail">auto</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── Networking ── -->
+    <div class="tab-panel" data-panel="networking" role="tabpanel">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Feature</th><th class="col-ancla">Ancla</th><th>Fly.io</th><th>Railway</th><th>Vercel</th><th>Northflank</th><th>Render</th><th>Heroku</th></tr></thead>
+          <tbody>
+            <tr><td>Custom domains</td><td class="col-ancla"><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td></tr>
+            <tr><td>Automatic TLS/SSL</td><td class="col-ancla"><span class="badge badge-y">Y</span> <span class="badge-detail">LE</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td></tr>
+            <tr><td>Wildcard domains</td><td class="col-ancla"><span class="badge badge-n">N</span> <span class="badge-detail">unclear</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td></tr>
+            <tr><td>Private networking</td><td class="col-ancla"><span class="badge badge-y">Y</span> <span class="badge-detail">Consul</span></td><td><span class="badge badge-y">Y</span> <span class="badge-detail">WireGuard</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-y">Y</span> <span class="badge-detail">mTLS</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span> <span class="badge-detail">Spaces</span></td></tr>
+            <tr><td>Global CDN / Edge</td><td class="col-ancla"><span class="badge badge-n">N</span></td><td><span class="badge badge-y">Y</span> <span class="badge-detail">Anycast</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span> <span class="badge-detail">126+ PoPs</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-p">P</span> <span class="badge-detail">static</span></td><td><span class="badge badge-n">N</span></td></tr>
+            <tr><td>DDoS protection</td><td class="col-ancla"><span class="badge badge-n">N</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-p">P</span></td></tr>
+            <tr><td>WAF</td><td class="col-ancla"><span class="badge badge-n">N</span></td><td><span class="badge badge-3p">3P</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-p">P</span></td><td><span class="badge badge-n">N</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── Data Services ── -->
+    <div class="tab-panel" data-panel="data" role="tabpanel">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Feature</th><th class="col-ancla">Ancla</th><th>Fly.io</th><th>Railway</th><th>Vercel</th><th>Northflank</th><th>Render</th><th>Heroku</th></tr></thead>
+          <tbody>
+            <tr><td>Managed PostgreSQL</td><td class="col-ancla"><span class="badge badge-y">Y</span> <span class="badge-detail">included</span></td><td><span class="badge badge-y">Y</span> <span class="badge-detail">$38+</span></td><td><span class="badge badge-p">P</span> <span class="badge-detail">unmanaged</span></td><td><span class="badge badge-3p">3P</span> <span class="badge-detail">Neon</span></td><td><span class="badge badge-y">Y</span> <span class="badge-detail">~$4+</span></td><td><span class="badge badge-y">Y</span> <span class="badge-detail">$6+</span></td><td><span class="badge badge-y">Y</span> <span class="badge-detail">$5+</span></td></tr>
+            <tr><td>Managed Redis / KV</td><td class="col-ancla"><span class="badge badge-y">Y</span> <span class="badge-detail">cache svc</span></td><td><span class="badge badge-3p">3P</span> <span class="badge-detail">Upstash</span></td><td><span class="badge badge-p">P</span> <span class="badge-detail">unmanaged</span></td><td><span class="badge badge-3p">3P</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span> <span class="badge-detail">$10+</span></td><td><span class="badge badge-y">Y</span> <span class="badge-detail">$3+ Valkey</span></td></tr>
+            <tr><td>Managed MongoDB</td><td class="col-ancla"><span class="badge badge-n">N</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-p">P</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-3p">3P</span></td></tr>
+            <tr><td>Object storage (S3)</td><td class="col-ancla"><span class="badge badge-n">N</span></td><td><span class="badge badge-3p">3P</span> <span class="badge-detail">Tigris</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span> <span class="badge-detail">Blob</span></td><td><span class="badge badge-y">Y</span> <span class="badge-detail">MinIO</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-3p">3P</span></td></tr>
+            <tr><td>DB connection pooling</td><td class="col-ancla"><span class="badge badge-n">N</span></td><td><span class="badge badge-y">Y</span> <span class="badge-detail">PgBouncer</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-y">Y</span></td></tr>
+            <tr><td>Point-in-time recovery</td><td class="col-ancla"><span class="badge badge-n">N</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-p">P</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td></tr>
+            <tr><td>dbshell from CLI</td><td class="col-ancla"><span class="badge badge-y">Y</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── Secrets ── -->
+    <div class="tab-panel" data-panel="secrets" role="tabpanel">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Feature</th><th class="col-ancla">Ancla</th><th>Fly.io</th><th>Railway</th><th>Vercel</th><th>Northflank</th><th>Render</th><th>Heroku</th></tr></thead>
+          <tbody>
+            <tr><td>Encrypted secrets</td><td class="col-ancla"><span class="badge badge-y">Y</span> <span class="badge-detail">Vault</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span> <span class="badge-detail">sealed</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span> <span class="badge-detail">AES-256</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td></tr>
+            <tr><td>Scoped config inheritance</td><td class="col-ancla"><span class="badge badge-y">Y</span> <span class="badge-detail">5 levels</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-p">P</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-n">N</span></td></tr>
+            <tr><td>.env file import</td><td class="col-ancla"><span class="badge badge-y">Y</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-n">N</span></td></tr>
+            <tr><td>Config snapshot / deploy</td><td class="col-ancla"><span class="badge badge-y">Y</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-p">P</span></td></tr>
+            <tr><td>Cross-service var refs</td><td class="col-ancla"><span class="badge badge-n">N</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-p">P</span></td><td><span class="badge badge-n">N</span></td></tr>
+            <tr><td>run with injected env</td><td class="col-ancla"><span class="badge badge-y">Y</span> <span class="badge-detail">ancla run</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-n">N</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── CI/CD ── -->
+    <div class="tab-panel" data-panel="cicd" role="tabpanel">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Feature</th><th class="col-ancla">Ancla</th><th>Fly.io</th><th>Railway</th><th>Vercel</th><th>Northflank</th><th>Render</th><th>Heroku</th></tr></thead>
+          <tbody>
+            <tr><td>Auto-deploy on push</td><td class="col-ancla"><span class="badge badge-y">Y</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td></tr>
+            <tr><td>Preview environments</td><td class="col-ancla"><span class="badge badge-y">Y</span></td><td><span class="badge badge-p">P</span> <span class="badge-detail">GH Action</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span> <span class="badge-detail">best-in-class</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span> <span class="badge-detail">Pro+</span></td><td><span class="badge badge-y">Y</span></td></tr>
+            <tr><td>Pipeline stages</td><td class="col-ancla"><span class="badge badge-n">N</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-p">P</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-y">Y</span></td></tr>
+            <tr><td>Promote between envs</td><td class="col-ancla"><span class="badge badge-y">Y</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-y">Y</span></td></tr>
+            <tr><td>Rolling deploys</td><td class="col-ancla"><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td></tr>
+            <tr><td>Blue/green deploys</td><td class="col-ancla"><span class="badge badge-n">N</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-y">Y</span></td></tr>
+            <tr><td>Canary deploys</td><td class="col-ancla"><span class="badge badge-n">N</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-n">N</span></td></tr>
+            <tr><td>Deploy hooks / webhooks</td><td class="col-ancla"><span class="badge badge-n">N</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── Rollback ── -->
+    <div class="tab-panel" data-panel="rollback" role="tabpanel">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Feature</th><th class="col-ancla">Ancla</th><th>Fly.io</th><th>Railway</th><th>Vercel</th><th>Northflank</th><th>Render</th><th>Heroku</th></tr></thead>
+          <tbody>
+            <tr><td>Instant rollback</td><td class="col-ancla"><span class="badge badge-y">Y</span> <span class="badge-detail">image+config</span></td><td><span class="badge badge-p">P</span> <span class="badge-detail">image only</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td></tr>
+            <tr><td>Config rollback</td><td class="col-ancla"><span class="badge badge-y">Y</span> <span class="badge-detail">snapshot</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-p">P</span></td><td><span class="badge badge-y">Y</span></td></tr>
+            <tr><td>Rollback to any version</td><td class="col-ancla"><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-p">P</span> <span class="badge-detail">retention</span></td><td><span class="badge badge-p">P</span> <span class="badge-detail">Pro+</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-p">P</span> <span class="badge-detail">plan-limited</span></td><td><span class="badge badge-y">Y</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── Container Access ── -->
+    <div class="tab-panel" data-panel="access" role="tabpanel">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Feature</th><th class="col-ancla">Ancla</th><th>Fly.io</th><th>Railway</th><th>Vercel</th><th>Northflank</th><th>Render</th><th>Heroku</th></tr></thead>
+          <tbody>
+            <tr><td>Interactive shell / SSH</td><td class="col-ancla"><span class="badge badge-y">Y</span> <span class="badge-detail">ancla shell</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td></tr>
+            <tr><td>SSH to running instance</td><td class="col-ancla"><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td></tr>
+            <tr><td>File transfer (SFTP)</td><td class="col-ancla"><span class="badge badge-n">N</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-n">N</span></td></tr>
+            <tr><td>Port forwarding</td><td class="col-ancla"><span class="badge badge-n">N</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-y">Y</span></td></tr>
+            <tr><td>Process type selection</td><td class="col-ancla"><span class="badge badge-y">Y</span> <span class="badge-detail">--process</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-n">N</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── Observability ── -->
+    <div class="tab-panel" data-panel="observability" role="tabpanel">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Feature</th><th class="col-ancla">Ancla</th><th>Fly.io</th><th>Railway</th><th>Vercel</th><th>Northflank</th><th>Render</th><th>Heroku</th></tr></thead>
+          <tbody>
+            <tr><td>Real-time log streaming</td><td class="col-ancla"><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td></tr>
+            <tr><td>Structured log search</td><td class="col-ancla"><span class="badge badge-n">N</span></td><td><span class="badge badge-p">P</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-p">P</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-p">P</span></td><td><span class="badge badge-n">N</span></td></tr>
+            <tr><td>Log retention</td><td class="col-ancla"><span class="badge badge-n">N</span></td><td><span class="badge badge-p">P</span> <span class="badge-detail">buffer</span></td><td><span class="badge badge-y">Y</span> <span class="badge-detail">7-30d</span></td><td><span class="badge badge-p">P</span> <span class="badge-detail">1hr-1d</span></td><td><span class="badge badge-y">Y</span> <span class="badge-detail">60d</span></td><td><span class="badge badge-n">N</span> <span class="badge-detail">stream</span></td><td><span class="badge badge-p">P</span> <span class="badge-detail">~min</span></td></tr>
+            <tr><td>Log forwarding / drains</td><td class="col-ancla"><span class="badge badge-n">N</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span> <span class="badge-detail">Pro+</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td></tr>
+            <tr><td>Metrics dashboard</td><td class="col-ancla"><span class="badge badge-n">N</span></td><td><span class="badge badge-y">Y</span> <span class="badge-detail">Grafana</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td></tr>
+            <tr><td>OpenTelemetry</td><td class="col-ancla"><span class="badge badge-n">N</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td></tr>
+            <tr><td>Pipeline metrics</td><td class="col-ancla"><span class="badge badge-y">Y</span> <span class="badge-detail">unique</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-n">N</span></td></tr>
+            <tr><td>Alerting</td><td class="col-ancla"><span class="badge badge-n">N</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-p">P</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── Team & RBAC ── -->
+    <div class="tab-panel" data-panel="team" role="tabpanel">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Feature</th><th class="col-ancla">Ancla</th><th>Fly.io</th><th>Railway</th><th>Vercel</th><th>Northflank</th><th>Render</th><th>Heroku</th></tr></thead>
+          <tbody>
+            <tr><td>Team / workspace mgmt</td><td class="col-ancla"><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td></tr>
+            <tr><td>RBAC (roles)</td><td class="col-ancla"><span class="badge badge-p">P</span> <span class="badge-detail">2 roles</span></td><td><span class="badge badge-p">P</span> <span class="badge-detail">2 roles</span></td><td><span class="badge badge-p">P</span> <span class="badge-detail">3 roles</span></td><td><span class="badge badge-y">Y</span> <span class="badge-detail">7+ roles</span></td><td><span class="badge badge-y">Y</span> <span class="badge-detail">custom</span></td><td><span class="badge badge-p">P</span></td><td><span class="badge badge-y">Y</span> <span class="badge-detail">4 perms</span></td></tr>
+            <tr><td>SSO / SAML</td><td class="col-ancla"><span class="badge badge-n">N</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-e">E</span></td><td><span class="badge badge-y">Y</span> <span class="badge-detail">$300/mo</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-e">E</span></td><td><span class="badge badge-e">E</span></td></tr>
+            <tr><td>Audit logs</td><td class="col-ancla"><span class="badge badge-n">N</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span> <span class="badge-detail">Org+</span></td><td><span class="badge badge-e">E</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── Infrastructure ── -->
+    <div class="tab-panel" data-panel="infra" role="tabpanel">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Feature</th><th class="col-ancla">Ancla</th><th>Fly.io</th><th>Railway</th><th>Vercel</th><th>Northflank</th><th>Render</th><th>Heroku</th></tr></thead>
+          <tbody>
+            <tr><td>Regions</td><td class="col-ancla"><span class="badge badge-p">P</span> <span class="badge-detail">1+</span></td><td><span class="badge badge-y">Y</span> <span class="badge-detail">18</span></td><td><span class="badge badge-p">P</span> <span class="badge-detail">4</span></td><td><span class="badge badge-y">Y</span> <span class="badge-detail">20 + 126 PoPs</span></td><td><span class="badge badge-y">Y</span> <span class="badge-detail">9-16 + BYOC</span></td><td><span class="badge badge-p">P</span> <span class="badge-detail">5</span></td><td><span class="badge badge-p">P</span> <span class="badge-detail">2/10</span></td></tr>
+            <tr><td>Multi-region deploys</td><td class="col-ancla"><span class="badge badge-n">N</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-n">N</span></td></tr>
+            <tr><td>BYOC / BYOK</td><td class="col-ancla"><span class="badge badge-n">N</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-n">N</span></td></tr>
+            <tr><td>GPU support</td><td class="col-ancla"><span class="badge badge-n">N</span></td><td><span class="badge badge-p">P</span> <span class="badge-detail">deprecating</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-y">Y</span> <span class="badge-detail">L4-B200</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-n">N</span></td></tr>
+            <tr><td>Kubernetes-based</td><td class="col-ancla"><span class="badge badge-y">Y</span></td><td><span class="badge badge-n">N</span> <span class="badge-detail">Firecracker</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-y">Y</span> <span class="badge-detail">Fir/EKS</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── Dev Experience ── -->
+    <div class="tab-panel" data-panel="dx" role="tabpanel">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Feature</th><th class="col-ancla">Ancla</th><th>Fly.io</th><th>Railway</th><th>Vercel</th><th>Northflank</th><th>Render</th><th>Heroku</th></tr></thead>
+          <tbody>
+            <tr><td>Interactive deploy wizard</td><td class="col-ancla"><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-n">N</span></td></tr>
+            <tr><td>Open dashboard from CLI</td><td class="col-ancla"><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-y">Y</span></td></tr>
+            <tr><td>Shell completions</td><td class="col-ancla"><span class="badge badge-y">Y</span> <span class="badge-detail">4 shells</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-y">Y</span></td></tr>
+            <tr><td>JSON output mode</td><td class="col-ancla"><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td></tr>
+            <tr><td>Quiet / scripting mode</td><td class="col-ancla"><span class="badge badge-y">Y</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-n">N</span></td></tr>
+            <tr><td>Local dev w/ remote env</td><td class="col-ancla"><span class="badge badge-y">Y</span> <span class="badge-detail">ancla run</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-n">N</span></td></tr>
+            <tr><td>Link / unlink project</td><td class="col-ancla"><span class="badge badge-y">Y</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── IaC & SDKs ── -->
+    <div class="tab-panel" data-panel="iac" role="tabpanel">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Feature</th><th class="col-ancla">Ancla</th><th>Fly.io</th><th>Railway</th><th>Vercel</th><th>Northflank</th><th>Render</th><th>Heroku</th></tr></thead>
+          <tbody>
+            <tr><td>Terraform provider</td><td class="col-ancla"><span class="badge badge-y">Y</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td></tr>
+            <tr><td>OpenAPI spec</td><td class="col-ancla"><span class="badge badge-y">Y</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-n">N</span> <span class="badge-detail">GraphQL</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td></tr>
+            <tr><td>Go SDK</td><td class="col-ancla"><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-n">N</span></td></tr>
+            <tr><td>Python SDK</td><td class="col-ancla"><span class="badge badge-y">Y</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-n">N</span></td></tr>
+            <tr><td>TypeScript / JS SDK</td><td class="col-ancla"><span class="badge badge-n">N</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-n">N</span></td></tr>
+            <tr><td>IaC config file</td><td class="col-ancla"><span class="badge badge-n">N</span></td><td><span class="badge badge-y">Y</span> <span class="badge-detail">fly.toml</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-y">Y</span></td></tr>
+            <tr><td>MCP server</td><td class="col-ancla"><span class="badge badge-n">N</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-n">N</span></td><td><span class="badge badge-y">Y</span></td><td><span class="badge badge-n">N</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══════════════ PRICING ═══════════════ -->
+<section id="pricing">
+  <div class="container">
+    <p class="section-label">Cost</p>
+    <h2 class="section-title">Pricing Landscape</h2>
+    <p class="section-desc">Entry-level, free tier, and team pricing across all platforms.</p>
+
+    <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 20px; color: var(--text-secondary);">Cheapest Always-On Service</h3>
+    <div class="pricing-grid">
+      <div class="price-card is-ancla">
+        <div class="price-card-name">Ancla</div>
+        <div class="price-card-amount">TBD <small>/mo</small></div>
+        <div class="price-card-desc">Full-stack service with Vault secrets, Consul, BuildKit. Postgres &amp; Redis included.</div>
+        <div class="price-card-model">BETA &mdash; PRICING TBD</div>
+      </div>
+      <div class="price-card">
+        <div class="price-card-name">Fly.io</div>
+        <div class="price-card-amount">~$2 <small>/mo</small></div>
+        <div class="price-card-desc">Shared CPU, 256 MB RAM. Per-second billing. No free tier for new accounts.</div>
+        <div class="price-card-model">PURE USAGE-BASED</div>
+      </div>
+      <div class="price-card">
+        <div class="price-card-name">Railway</div>
+        <div class="price-card-amount">$5 <small>/mo</small></div>
+        <div class="price-card-desc">Includes $5 usage credit. Vertical autoscale. Per-second billing on actual utilization.</div>
+        <div class="price-card-model">SUBSCRIPTION + USAGE</div>
+      </div>
+      <div class="price-card">
+        <div class="price-card-name">Vercel</div>
+        <div class="price-card-amount">$0 <small>/mo</small></div>
+        <div class="price-card-desc">Hobby tier: serverless, 1M invocations, 100 GB BW. Non-commercial use only.</div>
+        <div class="price-card-model">FREE (NON-COMMERCIAL)</div>
+      </div>
+      <div class="price-card">
+        <div class="price-card-name">Northflank</div>
+        <div class="price-card-amount">~$5 <small>/mo</small></div>
+        <div class="price-card-desc">0.2 vCPU, 512 MB. Free sandbox (2 services, 1 DB). Credit card required.</div>
+        <div class="price-card-model">PURE USAGE-BASED</div>
+      </div>
+      <div class="price-card">
+        <div class="price-card-name">Render</div>
+        <div class="price-card-amount">$7 <small>/mo</small></div>
+        <div class="price-card-desc">Starter: 0.5 CPU, 512 MB. Free tier sleeps after 15 min. $19/user for teams.</div>
+        <div class="price-card-model">PLAN + USAGE</div>
+      </div>
+      <div class="price-card">
+        <div class="price-card-name">Heroku</div>
+        <div class="price-card-amount">$7 <small>/mo</small></div>
+        <div class="price-card-desc">Basic dyno: 512 MB, always-on. Eco ($5) sleeps. No free tier since Nov 2022.</div>
+        <div class="price-card-model">FIXED PER-DYNO</div>
+      </div>
+    </div>
+
+    <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 20px; color: var(--text-secondary);">Team / Platform Costs</h3>
+    <div class="table-wrap" style="margin-bottom: 48px;">
+      <table>
+        <thead><tr><th>Platform</th><th>Platform Fee</th><th>Per-Seat Cost</th><th>Billing Model</th></tr></thead>
+        <tbody>
+          <tr><td>Ancla</td><td>TBD</td><td>None</td><td>TBD</td></tr>
+          <tr><td>Fly.io</td><td>None</td><td>None</td><td>Pure usage-based, per-second</td></tr>
+          <tr><td>Railway</td><td>$5&ndash;20/mo</td><td>None</td><td>Subscription + usage overage</td></tr>
+          <tr><td>Vercel</td><td>$20/mo (incl. 1 seat)</td><td>$20/extra deployer</td><td>Subscription + usage overage</td></tr>
+          <tr><td>Northflank</td><td>None</td><td>None</td><td>Pure usage-based, per-second</td></tr>
+          <tr><td>Render</td><td>None</td><td>$19&ndash;29/user/mo</td><td>Plan + usage</td></tr>
+          <tr><td>Heroku</td><td>None</td><td>Enterprise only</td><td>Per-dyno fixed monthly</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 20px; color: var(--text-secondary);">Managed PostgreSQL</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Platform</th><th>Smallest Plan</th><th>Mid-Tier (HA)</th><th>Model</th></tr></thead>
+        <tbody>
+          <tr><td>Ancla</td><td><span style="color: var(--accent-bright);">Included</span></td><td><span style="color: var(--accent-bright);">Included</span></td><td>Included with service</td></tr>
+          <tr><td>Fly.io</td><td>$38/mo (1 GB)</td><td>$282/mo (8 GB)</td><td>Fixed tiers + storage</td></tr>
+          <tr><td>Railway</td><td>~$10 (usage)</td><td>Usage-based</td><td>Per-second compute billing</td></tr>
+          <tr><td>Vercel</td><td>3P (Neon free)</td><td>3P (Neon paid)</td><td>Third-party billing</td></tr>
+          <tr><td>Northflank</td><td>~$4/mo</td><td>~$24/mo</td><td>Per-second compute</td></tr>
+          <tr><td>Render</td><td>$6/mo</td><td>$85+/mo</td><td>Fixed tiers + storage</td></tr>
+          <tr><td>Heroku</td><td>$5/mo (Essential)</td><td>$50&ndash;200+/mo</td><td>Fixed tiers</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ GAP ANALYSIS ═══════════════ -->
+<section id="gaps">
+  <div class="container">
+    <p class="section-label">Roadmap Intel</p>
+    <h2 class="section-title">Gap Analysis</h2>
+    <p class="section-desc">Features competitors have that Ancla doesn't, ranked by impact and market prevalence.</p>
+
+    <h3 style="font-size: 14px; font-weight: 600; margin-bottom: 24px; color: var(--red); font-family: var(--font-mono); letter-spacing: 0.06em;">PRIORITY 1 &mdash; HIGH IMPACT</h3>
+    <div class="gap-list" style="margin-bottom: 48px;">
+      <div class="gap-item">
+        <div class="gap-priority p1">P1</div>
+        <div class="gap-content">
+          <h4>Autoscaling (horizontal, metrics-based)</h4>
+          <p>Core PaaS expectation. CPU/memory/RPS-based at minimum. Every major competitor except Railway offers this.</p>
+          <div class="gap-who"><span>Fly.io</span><span>Vercel</span><span>Northflank</span><span>Render</span><span>Heroku</span></div>
+        </div>
+      </div>
+      <div class="gap-item">
+        <div class="gap-priority p1">P1</div>
+        <div class="gap-content">
+          <h4>Scale-to-zero</h4>
+          <p>Key cost-optimization feature and differentiator for low-traffic services and staging environments.</p>
+          <div class="gap-who"><span>Fly.io</span><span>Railway</span><span>Vercel</span><span>Render</span></div>
+        </div>
+      </div>
+      <div class="gap-item">
+        <div class="gap-priority p1">P1</div>
+        <div class="gap-content">
+          <h4>Cron jobs / scheduled tasks</h4>
+          <p>Every competitor offers this. Currently requires a separate <code style="font-family: var(--font-mono); font-size: 12px; background: var(--bg-hover); padding: 2px 6px; border-radius: 3px;">beat</code> process type in Ancla.</p>
+          <div class="gap-who"><span>Railway</span><span>Vercel</span><span>Northflank</span><span>Render</span><span>Heroku</span></div>
+        </div>
+      </div>
+      <div class="gap-item">
+        <div class="gap-priority p1">P1</div>
+        <div class="gap-content">
+          <h4>Log retention, search &amp; forwarding</h4>
+          <p>At minimum: 7-day retention + keyword search + log forwarding to external sinks (Datadog, etc.).</p>
+          <div class="gap-who"><span>Railway</span><span>Northflank</span><span>Render</span><span>Heroku</span></div>
+        </div>
+      </div>
+      <div class="gap-item">
+        <div class="gap-priority p1">P1</div>
+        <div class="gap-content">
+          <h4>Metrics dashboard</h4>
+          <p>CPU/memory/request metrics in the web dashboard. All competitors have this. Ancla already tracks pipeline metrics via API.</p>
+          <div class="gap-who"><span>All competitors</span></div>
+        </div>
+      </div>
+      <div class="gap-item">
+        <div class="gap-priority p1">P1</div>
+        <div class="gap-content">
+          <h4>Global multi-region deployment</h4>
+          <p>Single-region is a hard limitation for latency-sensitive global apps. Fly.io has 18 regions, Vercel has 20.</p>
+          <div class="gap-who"><span>Fly.io</span><span>Vercel</span><span>Northflank</span><span>Render</span></div>
+        </div>
+      </div>
+    </div>
+
+    <h3 style="font-size: 14px; font-weight: 600; margin-bottom: 24px; color: var(--yellow); font-family: var(--font-mono); letter-spacing: 0.06em;">PRIORITY 2 &mdash; COMPETITIVE DIFFERENTIATORS</h3>
+    <div class="gap-list" style="margin-bottom: 48px;">
+      <div class="gap-item">
+        <div class="gap-priority p2">P2</div>
+        <div class="gap-content">
+          <h4>IaC config file (ancla.yaml)</h4>
+          <p>Declarative infrastructure alongside the Terraform provider. Every competitor has a config-as-code format.</p>
+          <div class="gap-who"><span>Fly.io</span><span>Railway</span><span>Vercel</span><span>Northflank</span><span>Render</span><span>Heroku</span></div>
+        </div>
+      </div>
+      <div class="gap-item">
+        <div class="gap-priority p2">P2</div>
+        <div class="gap-content">
+          <h4>Deploy hooks / webhooks</h4>
+          <p>Enables integration with any CI/CD system without requiring a GitHub App connection.</p>
+          <div class="gap-who"><span>Vercel</span><span>Render</span><span>Heroku</span><span>Northflank</span></div>
+        </div>
+      </div>
+      <div class="gap-item">
+        <div class="gap-priority p2">P2</div>
+        <div class="gap-content">
+          <h4>Built-in alerting</h4>
+          <p>Deploy failure notifications via Slack/email at minimum. Threshold-based CPU/memory alerts as a next step.</p>
+          <div class="gap-who"><span>Northflank</span><span>Render</span><span>Heroku</span><span>Vercel</span></div>
+        </div>
+      </div>
+      <div class="gap-item">
+        <div class="gap-priority p2">P2</div>
+        <div class="gap-content">
+          <h4>Object storage (S3-compatible)</h4>
+          <p>Increasingly expected. Avoids forcing users to configure external providers for file uploads.</p>
+          <div class="gap-who"><span>Railway</span><span>Northflank</span><span>Fly.io</span></div>
+        </div>
+      </div>
+    </div>
+
+    <h3 style="font-size: 14px; font-weight: 600; margin-bottom: 24px; color: var(--text-muted); font-family: var(--font-mono); letter-spacing: 0.06em;">PRIORITY 3 &mdash; NICE TO HAVE</h3>
+    <div class="gap-list">
+      <div class="gap-item">
+        <div class="gap-priority p3">P3</div>
+        <div class="gap-content">
+          <h4>GPU support</h4>
+          <p>Niche and expensive. Fly.io is deprecating theirs. Only Northflank has a serious offering (L4 through B200).</p>
+          <div class="gap-who"><span>Northflank</span><span>Fly.io (deprecating)</span></div>
+        </div>
+      </div>
+      <div class="gap-item">
+        <div class="gap-priority p3">P3</div>
+        <div class="gap-content">
+          <h4>SSO / SAML</h4>
+          <p>Enterprise roadmap item. Not urgent for initial market but will be table-stakes for enterprise deals.</p>
+          <div class="gap-who"><span>Vercel</span><span>Northflank</span><span>Render</span><span>Heroku</span></div>
+        </div>
+      </div>
+      <div class="gap-item">
+        <div class="gap-priority p3">P3</div>
+        <div class="gap-content">
+          <h4>MCP server for AI tools</h4>
+          <p>Vercel and Render ship MCP servers for Claude Code / Cursor integration. Trending but low current impact.</p>
+          <div class="gap-who"><span>Vercel</span><span>Render</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ ADVANTAGES ═══════════════ -->
+<section id="advantages">
+  <div class="container">
+    <p class="section-label">Strengths</p>
+    <h2 class="section-title">What Ancla Does <em style="font-family: var(--font-display); color: var(--accent-bright);">Better</em></h2>
+    <p class="section-desc">Unique advantages that differentiate Ancla from every competitor in this analysis.</p>
+
+    <div class="adv-grid">
+      <div class="adv-card">
+        <h4>Vault-backed secrets</h4>
+        <p>HashiCorp Vault with envconsul injection is enterprise-grade. Most competitors use simpler encrypted env vars. Secrets are decrypted only at runtime on the host.</p>
+      </div>
+      <div class="adv-card">
+        <h4>Config snapshot per deploy</h4>
+        <p>Full config rollback with each release. Rolling back restores the exact config from that release. Only Heroku comes close; most competitors roll back image only.</p>
+      </div>
+      <div class="adv-card">
+        <h4>5-level config inheritance</h4>
+        <p>Workspace &rarr; Team &rarr; Project &rarr; Env &rarr; Service scoping. The most granular config hierarchy of any platform in this analysis.</p>
+      </div>
+      <div class="adv-card">
+        <h4>Consul service discovery</h4>
+        <p>Real service mesh with Consul for service-to-service communication. Most competitors offer basic internal DNS only.</p>
+      </div>
+      <div class="adv-card">
+        <h4>Interactive deploy wizard</h4>
+        <p><code style="font-family: var(--font-mono); font-size: 12px; background: var(--bg-hover); padding: 2px 6px; border-radius: 3px;">ancla deploy</code> takes you from zero to deployed with auto-scaffolding. Only Fly.io's <code style="font-family: var(--font-mono); font-size: 12px; background: var(--bg-hover); padding: 2px 6px; border-radius: 3px;">fly launch</code> is comparable.</p>
+      </div>
+      <div class="adv-card">
+        <h4>Terraform provider</h4>
+        <p>Official provider puts Ancla ahead of Fly.io, Railway, and Northflank on infrastructure-as-code. Critical for enterprise adoption.</p>
+      </div>
+      <div class="adv-card">
+        <h4>Multi-SDK ecosystem</h4>
+        <p>Go + Python + TypeScript SDKs + OpenAPI spec. Most competitors have zero or one official SDK. Full programmatic control from any language.</p>
+      </div>
+      <div class="adv-card">
+        <h4>Pipeline promotion</h4>
+        <p>First-class env-to-env promotion with frozen build+config snapshot. Only Heroku (slug promotion) and Northflank (release flows) offer something similar.</p>
+      </div>
+      <div class="adv-card">
+        <h4>.env file bulk import</h4>
+        <p>Simple but valuable for onboarding. <code style="font-family: var(--font-mono); font-size: 12px; background: var(--bg-hover); padding: 2px 6px; border-radius: 3px;">ancla config import --file .env</code> &mdash; most competitors lack this entirely.</p>
+      </div>
+      <div class="adv-card">
+        <h4>Per-process-type scaling</h4>
+        <p>Granular Procfile-based scaling: web=3, worker=2, beat=1. Only Fly.io and Heroku match this level of process control.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ Footer ═══════════════ -->
+<footer style="padding: 48px 0; border-top: 1px solid var(--border-subtle);">
+  <div class="container" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <svg viewBox="0 0 64 64" fill="#22d3ee" width="20" height="20"><path fill-rule="evenodd" d="M32 2a7 7 0 1 0 0 14 7 7 0 0 0 0-14zm0 3a4 4 0 1 1 0 8 4 4 0 0 1 0-8z"/><rect x="30" y="15" width="4" height="38" rx="2"/><rect x="12" y="23" width="40" height="5" rx="2.5"/><path d="M30 49 C22 56 8 52 6 40 L12 36 C14 46 24 50 30 45Z"/><path d="M34 49 C42 56 56 52 58 40 L52 36 C50 46 40 50 34 45Z"/><path d="M30 53 L32 60 L34 53Z"/></svg>
+      <span style="font-family: var(--font-mono); font-size: 13px; color: var(--text-muted);">ancla.dev</span>
+    </div>
+    <span style="font-family: var(--font-mono); font-size: 12px; color: var(--text-muted); opacity: 0.5;">Cross-verified &middot; February 2026 &middot; 7 Platforms &middot; 100+ Data Points</span>
+  </div>
+</footer>
+
+<script>
+// Tab switching
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const tab = btn.dataset.tab;
+    btn.closest('.container').querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.closest('.container').querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelector(`[data-panel="${tab}"]`).classList.add('active');
+  });
+});
+
+// Side nav active state on scroll
+const sections = document.querySelectorAll('section, header');
+const navDots = document.querySelectorAll('.side-nav a');
+
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      const id = entry.target.id;
+      navDots.forEach(dot => dot.classList.remove('active'));
+      const activeDot = document.querySelector(`.side-nav a[href="#${id}"]`);
+      if (activeDot) activeDot.classList.add('active');
+    }
+  });
+}, { threshold: 0.3 });
+
+sections.forEach(s => { if (s.id) observer.observe(s); });
+</script>
+</body>
+</html>
