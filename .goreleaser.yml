@@ -53,8 +53,7 @@ brews:
       - default
     repository:
       owner: SideQuest-Group
-      name: ancla-client
-    directory: Formula
+      name: homebrew-ancla-client
     homepage: "https://ancla.dev"
     description: "CLI client for the Ancla deployment platform"
     license: "Apache-2.0"
