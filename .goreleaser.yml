@@ -54,6 +54,7 @@ brews:
     repository:
       owner: SideQuest-Group
       name: homebrew-ancla-client
+      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
     homepage: "https://ancla.dev"
     description: "CLI client for the Ancla deployment platform"
     license: "Apache-2.0"
