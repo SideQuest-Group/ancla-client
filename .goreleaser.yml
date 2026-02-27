@@ -47,6 +47,24 @@ sboms:
       - ${artifact}
       - --output=spdx-json=${document}
 
+brews:
+  - name: ancla
+    ids:
+      - default
+    repository:
+      owner: SideQuest-Group
+      name: ancla-client
+    directory: Formula
+    homepage: "https://ancla.dev"
+    description: "CLI client for the Ancla deployment platform"
+    license: "Apache-2.0"
+    install: |
+      bin.install "ancla"
+    test: |
+      system "#{bin}/ancla", "version"
+    caveats: |
+      To update: brew upgrade ancla
+
 changelog:
   sort: asc
   filters:

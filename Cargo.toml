@@ -1,0 +1,31 @@
+[package]
+name = "ancla"
+version = "0.0.0"
+edition = "2021"
+description = "CLI client for the Ancla deployment platform"
+license = "Apache-2.0"
+repository = "https://github.com/SideQuest-Group/ancla-client"
+homepage = "https://github.com/SideQuest-Group/ancla-client"
+publish = false
+
+[package.metadata.binstall]
+pkg-url = "{ repo }/releases/download/v{ version }/ancla_{ version }_{ target }{ archive-suffix }"
+pkg-fmt = "tgz"
+bin-dir = "ancla"
+
+[package.metadata.binstall.overrides.x86_64-unknown-linux-gnu]
+pkg-url = "{ repo }/releases/download/v{ version }/ancla_{ version }_linux_amd64.tar.gz"
+
+[package.metadata.binstall.overrides.aarch64-unknown-linux-gnu]
+pkg-url = "{ repo }/releases/download/v{ version }/ancla_{ version }_linux_arm64.tar.gz"
+
+[package.metadata.binstall.overrides.x86_64-apple-darwin]
+pkg-url = "{ repo }/releases/download/v{ version }/ancla_{ version }_darwin_amd64.tar.gz"
+
+[package.metadata.binstall.overrides.aarch64-apple-darwin]
+pkg-url = "{ repo }/releases/download/v{ version }/ancla_{ version }_darwin_arm64.tar.gz"
+
+[package.metadata.binstall.overrides.x86_64-pc-windows-msvc]
+pkg-url = "{ repo }/releases/download/v{ version }/ancla_{ version }_windows_amd64.zip"
+pkg-fmt = "zip"
+bin-dir = "ancla.exe"

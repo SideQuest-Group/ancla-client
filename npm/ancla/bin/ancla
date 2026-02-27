@@ -1,0 +1,60 @@
+#!/usr/bin/env node
+
+const { execFileSync } = require('child_process');
+const path = require('path');
+const fs = require('fs');
+
+const PLATFORMS = {
+  'linux-x64': '@ancla/linux-x64',
+  'linux-arm64': '@ancla/linux-arm64',
+  'darwin-x64': '@ancla/darwin-x64',
+  'darwin-arm64': '@ancla/darwin-arm64',
+  'win32-x64': '@ancla/win32-x64',
+};
+
+function getBinaryPath() {
+  const platformKey = `${process.platform}-${process.arch}`;
+  const pkg = PLATFORMS[platformKey];
+
+  if (!pkg) {
+    console.error(
+      `Unsupported platform: ${process.platform}-${process.arch}\n` +
+        `ancla supports: ${Object.keys(PLATFORMS).join(', ')}`,
+    );
+    process.exit(1);
+  }
+
+  try {
+    const pkgDir = path.dirname(require.resolve(`${pkg}/package.json`));
+    const bin = process.platform === 'win32' ? 'ancla.exe' : 'ancla';
+    const binPath = path.join(pkgDir, 'bin', bin);
+
+    if (!fs.existsSync(binPath)) {
+      throw new Error(`Binary not found at ${binPath}`);
+    }
+
+    return binPath;
+  } catch (e) {
+    console.error(
+      `Failed to find ancla binary for ${platformKey}.\n` +
+        `Make sure the optional dependency ${pkg} is installed.\n` +
+        `You may need to run: npm install ancla --force\n\n` +
+        `Error: ${e.message}`,
+    );
+    process.exit(1);
+  }
+}
+
+const binPath = getBinaryPath();
+
+try {
+  const result = execFileSync(binPath, process.argv.slice(2), {
+    stdio: 'inherit',
+    env: process.env,
+  });
+} catch (e) {
+  if (e.status !== null) {
+    process.exit(e.status);
+  }
+  throw e;
+}

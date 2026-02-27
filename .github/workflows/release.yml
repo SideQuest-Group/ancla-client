@@ -221,3 +221,74 @@ jobs:
         with:
           packages-dir: dist/
           attestations: true
+
+  publish-npm:
+    needs: goreleaser
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          registry-url: "https://registry.npmjs.org"
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: goreleaser-archives
+          path: dist/
+
+      - name: Stage platform binaries and publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+
+          # Map: npm-pkg-dir goos goarch binary-name
+          declare -A PKG_MAP=(
+            ["ancla-linux-x64"]="linux amd64 ancla"
+            ["ancla-linux-arm64"]="linux arm64 ancla"
+            ["ancla-darwin-x64"]="darwin amd64 ancla"
+            ["ancla-darwin-arm64"]="darwin arm64 ancla"
+            ["ancla-win32-x64"]="windows amd64 ancla.exe"
+          )
+
+          for pkg in "${!PKG_MAP[@]}"; do
+            read -r goos goarch binname <<< "${PKG_MAP[$pkg]}"
+            ARCHIVE_PREFIX="ancla_${VERSION}_${goos}_${goarch}"
+
+            mkdir -p "npm/${pkg}/bin"
+
+            if [ "$goos" = "windows" ]; then
+              ARCHIVE=$(ls dist/${ARCHIVE_PREFIX}.zip 2>/dev/null | head -1)
+              unzip -o "$ARCHIVE" -d "npm/${pkg}/bin/"
+            else
+              ARCHIVE=$(ls dist/${ARCHIVE_PREFIX}.tar.gz 2>/dev/null | head -1)
+              tar xzf "$ARCHIVE" -C "npm/${pkg}/bin/" --strip-components=0 2>/dev/null || tar xzf "$ARCHIVE" -C "npm/${pkg}/bin/"
+            fi
+
+            chmod +x "npm/${pkg}/bin/${binname}" 2>/dev/null || true
+
+            # Set version in platform package
+            cd "npm/${pkg}"
+            npm version "${VERSION}" --no-git-tag-version --allow-same-version
+            npm publish --access public
+            cd ../..
+          done
+
+          # Publish the meta-package last
+          cd npm/ancla
+
+          # Update optionalDependencies versions
+          node -e "
+            const pkg = require('./package.json');
+            pkg.version = '${VERSION}';
+            for (const dep of Object.keys(pkg.optionalDependencies)) {
+              pkg.optionalDependencies[dep] = '${VERSION}';
+            }
+            require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+          "
+
+          npm publish --access public
