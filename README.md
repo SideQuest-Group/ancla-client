@@ -4,30 +4,38 @@ CLI client for the [Ancla](https://ancla.dev) deployment platform.
 
 ## Installation
 
-### Quick install (recommended)
-
-```bash
-curl -LsSf https://ancla.dev/install.sh | sh
-```
-
-Pin a specific version:
-
-```bash
-curl -LsSf https://ancla.dev/install.sh | sh -s -- --version v0.5.0
-```
-
 ### Go
 
 ```bash
-go install github.com/SideQuest-Group/ancla-client/cmd/ancla@latest
+go install ancla.dev/cli@latest
 ```
 
-### Python / uv
+### Python
 
 ```bash
-pip install ancla-cli
+uv tool install ancla
 # or
-uv tool install ancla-cli
+pip install ancla
+```
+
+### Homebrew
+
+```bash
+brew install SideQuest-Group/ancla-client/ancla
+```
+
+### npm / Bun
+
+```bash
+npx ancla
+# or
+bunx ancla
+```
+
+### Cargo
+
+```bash
+cargo binstall ancla
 ```
 
 ### GitHub Releases
@@ -90,6 +98,8 @@ The CLI reads configuration from (in order of precedence):
 | `ancla config import <svc-id> -f .env` | Bulk import from .env |
 | `ancla config list --scope workspace` | List config vars at workspace scope |
 | `ancla version` | Show CLI version |
+
+Full documentation at [docs.ancla.dev](https://docs.ancla.dev).
 
 ## Development
 

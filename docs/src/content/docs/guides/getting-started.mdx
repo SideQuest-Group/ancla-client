@@ -8,31 +8,51 @@ import { Tabs, TabItem } from '@astrojs/starlight/components';
 ## Installation
 
 <Tabs>
-  <TabItem label="Installer (recommended)">
-    ```bash
-    curl -LsSf https://ancla.dev/install.sh | sh
-    ```
-
-    Pin a specific version:
+  <TabItem label="Go">
+    Requires Go 1.24+.
 
     ```bash
-    curl -LsSf https://ancla.dev/install.sh | sh -s -- --version v0.5.0
+    go install ancla.dev/cli@latest
     ```
   </TabItem>
-  <TabItem label="uv">
+  <TabItem label="Python">
     ```bash
-    uv tool install ancla-cli
+    uv tool install ancla
     ```
 
-    Or run without installing:
+    Or with pip:
 
     ```bash
-    uvx ancla
+    pip install ancla
     ```
   </TabItem>
-  <TabItem label="pip">
+  <TabItem label="Homebrew">
     ```bash
-    pip install ancla-cli
+    brew install SideQuest-Group/ancla-client/ancla
+    ```
+  </TabItem>
+  <TabItem label="npm / Bun">
+    Run without installing:
+
+    ```bash
+    npx ancla
+    # or
+    bunx ancla
+    ```
+
+    Or install globally:
+
+    ```bash
+    npm install -g ancla
+    # or
+    bun install -g ancla
+    ```
+  </TabItem>
+  <TabItem label="Cargo">
+    Requires [cargo-binstall](https://github.com/cargo-bins/cargo-binstall).
+
+    ```bash
+    cargo binstall ancla
     ```
   </TabItem>
   <TabItem label="Binary">
@@ -41,35 +61,37 @@ import { Tabs, TabItem } from '@astrojs/starlight/components';
     <Tabs>
       <TabItem label="macOS (Apple Silicon)">
         ```bash
-        curl -Lo ancla https://github.com/SideQuest-Group/ancla-client/releases/latest/download/ancla_darwin_arm64
+        curl -Lo ancla.tar.gz https://github.com/SideQuest-Group/ancla-client/releases/latest/download/ancla_darwin_arm64.tar.gz
+        tar xzf ancla.tar.gz
         chmod +x ancla
         sudo mv ancla /usr/local/bin/
         ```
       </TabItem>
       <TabItem label="macOS (Intel)">
         ```bash
-        curl -Lo ancla https://github.com/SideQuest-Group/ancla-client/releases/latest/download/ancla_darwin_amd64
+        curl -Lo ancla.tar.gz https://github.com/SideQuest-Group/ancla-client/releases/latest/download/ancla_darwin_amd64.tar.gz
+        tar xzf ancla.tar.gz
         chmod +x ancla
         sudo mv ancla /usr/local/bin/
         ```
       </TabItem>
       <TabItem label="Linux (amd64)">
         ```bash
-        curl -Lo ancla https://github.com/SideQuest-Group/ancla-client/releases/latest/download/ancla_linux_amd64
+        curl -Lo ancla.tar.gz https://github.com/SideQuest-Group/ancla-client/releases/latest/download/ancla_linux_amd64.tar.gz
+        tar xzf ancla.tar.gz
         chmod +x ancla
         sudo mv ancla /usr/local/bin/
         ```
       </TabItem>
     </Tabs>
   </TabItem>
-  <TabItem label="Go">
-    Requires Go 1.24+.
-
-    ```bash
-    go install github.com/SideQuest-Group/ancla-client/cmd/ancla@latest
-    ```
-  </TabItem>
 </Tabs>
+
+Verify the install:
+
+```bash
+ancla version
+```
 
 ## Quick start
 
