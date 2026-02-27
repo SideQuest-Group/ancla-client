@@ -24,6 +24,14 @@ export default defineConfig({
       ],
       sidebar: [
         {
+          label: "Platform",
+          items: [
+            { label: "Overview", slug: "platform" },
+            { label: "Deploy Pipeline", slug: "platform/deploy-pipeline" },
+            { label: "Secrets & Config", slug: "platform/secrets-and-config" },
+          ],
+        },
+        {
           label: "Guides",
           items: [
             { label: "Getting Started", slug: "guides/getting-started" },
