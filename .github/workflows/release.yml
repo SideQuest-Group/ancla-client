@@ -4,6 +4,20 @@ on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag (e.g. v1.0.3)"
+        required: true
+      jobs:
+        description: "Jobs to run"
+        required: true
+        type: choice
+        options:
+          - all
+          - goreleaser
+          - pypi
+          - npm
 
 permissions:
   contents: write
@@ -12,6 +26,10 @@ permissions:
 
 jobs:
   goreleaser:
+    if: >-
+      github.event_name == 'push' ||
+      inputs.jobs == 'all' ||
+      inputs.jobs == 'goreleaser'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -36,7 +54,33 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Upload archives for PyPI job
+      - name: Upload archives for downstream jobs
+        uses: actions/upload-artifact@v4
+        with:
+          name: goreleaser-archives
+          path: dist/ancla_*
+          retention-days: 1
+
+  # Download release archives from GitHub when goreleaser didn't run in this workflow
+  fetch-archives:
+    if: >-
+      github.event_name == 'workflow_dispatch' &&
+      inputs.jobs != 'all' &&
+      inputs.jobs != 'goreleaser'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download release assets from GitHub
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ inputs.tag }}"
+          mkdir -p dist
+          gh release download "$TAG" \
+            --repo "${{ github.repository }}" \
+            --pattern "ancla_*" \
+            --dir dist/
+
+      - name: Upload archives as artifact
         uses: actions/upload-artifact@v4
         with:
           name: goreleaser-archives
@@ -44,7 +88,13 @@ jobs:
           retention-days: 1
 
   pypi-wheels:
-    needs: goreleaser
+    needs:
+      - goreleaser
+      - fetch-archives
+    if: >-
+      !cancelled() &&
+      (needs.goreleaser.result == 'success' || needs.fetch-archives.result == 'success') &&
+      (github.event_name == 'push' || inputs.jobs == 'all' || inputs.jobs == 'pypi')
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -78,7 +128,8 @@ jobs:
 
       - name: Build wheel
         run: |
-          VERSION="${GITHUB_REF_NAME#v}"
+          TAG="${{ inputs.tag || github.ref_name }}"
+          VERSION="${TAG#v}"
           PLAT="${{ matrix.plat }}"
           ARCHIVE_PREFIX="ancla_${VERSION}_${{ matrix.goos }}_${{ matrix.goarch }}"
 
@@ -182,6 +233,8 @@ jobs:
 
   publish-pypi:
     needs: pypi-wheels
+    if: >-
+      !cancelled() && needs.pypi-wheels.result == 'success'
     runs-on: ubuntu-latest
     environment: pypi
     permissions:
@@ -210,11 +263,12 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload "${{ github.ref_name }}" \
+          TAG="${{ inputs.tag || github.ref_name }}"
+          gh release upload "$TAG" \
             dist/*.whl \
             wheel-checksums-sha256.txt \
             --repo "${{ github.repository }}" \
-            --clobber
+            || echo "::warning::Upload skipped (assets may already exist due to release immutability)"
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
@@ -223,7 +277,13 @@ jobs:
           attestations: true
 
   publish-npm:
-    needs: goreleaser
+    needs:
+      - goreleaser
+      - fetch-archives
+    if: >-
+      !cancelled() &&
+      (needs.goreleaser.result == 'success' || needs.fetch-archives.result == 'success') &&
+      (github.event_name == 'push' || inputs.jobs == 'all' || inputs.jobs == 'npm')
     runs-on: ubuntu-latest
     environment: npm
     permissions:
@@ -246,7 +306,8 @@ jobs:
 
       - name: Stage platform binaries and publish
         run: |
-          VERSION="${GITHUB_REF_NAME#v}"
+          TAG="${{ inputs.tag || github.ref_name }}"
+          VERSION="${TAG#v}"
 
           # Map: npm-pkg-dir goos goarch binary-name
           declare -A PKG_MAP=(
