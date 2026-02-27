@@ -1,14 +1,18 @@
 {
   "name": "@ancla/linux-x64",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "ancla CLI binary for linux x64",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/SideQuest-Group/ancla-client.git"
   },
-  "os": ["linux"],
-  "cpu": ["x64"],
+  "os": [
+    "linux"
+  ],
+  "cpu": [
+    "x64"
+  ],
   "files": [
     "bin/ancla"
   ]

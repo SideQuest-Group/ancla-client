@@ -225,8 +225,10 @@ jobs:
   publish-npm:
     needs: goreleaser
     runs-on: ubuntu-latest
+    environment: npm
     permissions:
       contents: read
+      id-token: write
     steps:
       - uses: actions/checkout@v4
 
@@ -241,8 +243,6 @@ jobs:
           path: dist/
 
       - name: Stage platform binaries and publish
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
 
@@ -274,7 +274,7 @@ jobs:
             # Set version in platform package
             cd "npm/${pkg}"
             npm version "${VERSION}" --no-git-tag-version --allow-same-version
-            npm publish --access public
+            npm publish --access public --provenance
             cd ../..
           done
 
@@ -291,4 +291,4 @@ jobs:
             require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
           "
 
-          npm publish --access public
+          npm publish --access public --provenance

@@ -1,6 +1,6 @@
 {
   "name": "ancla",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "CLI client for the Ancla deployment platform",
   "license": "Apache-2.0",
   "homepage": "https://github.com/SideQuest-Group/ancla-client",
@@ -25,10 +25,10 @@
     "bin/ancla"
   ],
   "optionalDependencies": {
-    "@ancla/linux-x64": "0.0.0",
-    "@ancla/linux-arm64": "0.0.0",
-    "@ancla/darwin-x64": "0.0.0",
-    "@ancla/darwin-arm64": "0.0.0",
-    "@ancla/win32-x64": "0.0.0"
+    "@ancla/linux-x64": "0.0.1",
+    "@ancla/linux-arm64": "0.0.1",
+    "@ancla/darwin-x64": "0.0.1",
+    "@ancla/darwin-arm64": "0.0.1",
+    "@ancla/win32-x64": "0.0.1"
   }
 }
