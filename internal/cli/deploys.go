@@ -20,7 +20,7 @@ func init() {
 
 var deploysCmd = &cobra.Command{
 	Use:     "deploys",
-	Aliases: []string{"deploy", "d"},
+	Aliases: []string{"d"},
 	Short:   "Manage deploys",
 	Long: `Manage deploys for your services.
 
