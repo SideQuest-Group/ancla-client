@@ -217,11 +217,11 @@ func followBuild(buildID string) error {
 		switch result.Status {
 		case "built", "success", "complete":
 			stop()
-			fmt.Println("\nBuild complete.")
+			fmt.Println("\n" + stSuccess.Render(symCheck+" Build complete."))
 			return nil
 		case "error", "failed":
 			stop()
-			return fmt.Errorf("build failed")
+			return fmt.Errorf("%s", stError.Render(symCross+" Build failed"))
 		}
 	}
 }

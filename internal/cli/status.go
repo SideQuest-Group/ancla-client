@@ -44,7 +44,7 @@ environment, service details, and current pipeline status in a single view.`,
 		// If we have a full service path, fetch pipeline status
 		if cfg.Workspace != "" && cfg.Project != "" && cfg.Env != "" && cfg.Service != "" {
 			svcPath := "/workspaces/" + cfg.Workspace + "/projects/" + cfg.Project + "/envs/" + cfg.Env + "/services/" + cfg.Service
-			req, _ := http.NewRequest("GET", apiURL(svcPath+"/pipeline-status"), nil)
+			req, _ := http.NewRequest("GET", apiURL(svcPath+"/pipeline/status"), nil)
 			body, err := doRequest(req)
 			if err == nil {
 				var status struct {
@@ -65,27 +65,27 @@ environment, service details, and current pipeline status in a single view.`,
 			return printJSON(out)
 		}
 
-		fmt.Printf("Workspace:   %s\n", out.Workspace)
+		fmt.Println(stHeading.Render(symAnchor + " Status"))
+		fmt.Println()
+		fmt.Println(kv("Workspace", out.Workspace))
 		if out.Project != "" {
-			fmt.Printf("Project:     %s\n", out.Project)
+			fmt.Println(kv("Project", out.Project))
 		}
 		if out.Env != "" {
-			fmt.Printf("Environment: %s\n", out.Env)
+			fmt.Println(kv("Environment", out.Env))
 		}
 		if out.Service != "" {
-			fmt.Printf("Service:     %s\n", out.Service)
+			fmt.Println(kv("Service", out.Service))
 		}
 
 		if out.Build != "" || out.Deploy != "" {
 			fmt.Println()
-			var rows [][]string
 			if out.Build != "" {
-				rows = append(rows, []string{"Build", colorStatus(out.Build)})
+				fmt.Println(kv("Build", colorStatus(out.Build)))
 			}
 			if out.Deploy != "" {
-				rows = append(rows, []string{"Deploy", colorStatus(out.Deploy)})
+				fmt.Println(kv("Deploy", colorStatus(out.Deploy)))
 			}
-			table([]string{"STAGE", "STATUS"}, rows)
 		}
 
 		return nil

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 )
 
@@ -65,15 +64,21 @@ var listCmd = &cobra.Command{
 			return printJSON(grouped)
 		}
 
-		// Display projects grouped by workspace
+		// Display projects grouped by workspace, highlighting the linked project
+		fmt.Println(stHeading.Render(symAnchor + " Your Projects"))
+		fmt.Println()
 		for _, ws := range workspaces {
-			bold.Println(ws.Name)
+			fmt.Println(stBold.Render(ws.Name))
 			projs := allProjects[ws.Slug]
 			if len(projs) == 0 {
-				fmt.Println(color.HiBlackString("  (no projects)"))
+				fmt.Println(stDim.Render("  (no projects)"))
 			}
 			for _, p := range projs {
-				fmt.Printf("  %s\n", p.Name)
+				if ws.Slug == cfg.Workspace && p.Slug == cfg.Project {
+					fmt.Println("  " + stAccent.Render(p.Name))
+				} else {
+					fmt.Printf("  %s\n", p.Name)
+				}
 			}
 			fmt.Println()
 		}

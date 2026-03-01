@@ -404,12 +404,12 @@ func ensureEnv(ws, proj, current string) (string, error) {
 		req, _ := http.NewRequest("GET", apiURL("/workspaces/"+ws+"/projects/"+proj+"/envs/"+current+"/"), nil)
 		if _, err := doRequest(req); err == nil {
 			if !isQuiet() {
-				fmt.Printf("\n→ Environment: %s\n", current)
+				fmt.Println(stepDone("Environment: " + stAccent.Render(current)))
 			}
 			return current, nil
 		}
 		if !isQuiet() {
-			fmt.Printf("\n→ Environment %q not found, re-selecting...\n", current)
+			fmt.Println(stepActive(fmt.Sprintf("Environment %q not found, re-selecting...", current)))
 		}
 	}
 
@@ -427,10 +427,6 @@ func ensureEnv(ws, proj, current string) (string, error) {
 		return "", fmt.Errorf("parsing environments: %w", err)
 	}
 
-	if !isQuiet() {
-		fmt.Println("\n→ No environment linked.")
-	}
-
 	items := make([]promptItem, len(envs))
 	for i, e := range envs {
 		items[i] = promptItem{Slug: e.Slug, Name: e.Name}
@@ -441,7 +437,7 @@ func ensureEnv(ws, proj, current string) (string, error) {
 	}
 	switch action {
 	case "existing":
-		fmt.Printf("  ✓ Environment: %s\n", slug)
+		fmt.Println(stepDone("Environment: " + stAccent.Render(slug)))
 		return slug, nil
 	case "skip":
 		return "", nil
@@ -475,7 +471,7 @@ func createEnv(ws, proj, name string) (string, error) {
 	if err := json.Unmarshal(body, &e); err != nil {
 		return "", fmt.Errorf("parsing environment response: %w", err)
 	}
-	fmt.Printf("  ✓ Created environment %q\n", e.Name)
+	fmt.Println(stepDone("Created environment " + stAccent.Render(e.Name)))
 	return e.Slug, nil
 }
 
@@ -485,12 +481,12 @@ func ensureService(ws, proj, env, current string) (string, error) {
 		req, _ := http.NewRequest("GET", apiURL(servicePath(ws, proj, env, current)), nil)
 		if _, err := doRequest(req); err == nil {
 			if !isQuiet() {
-				fmt.Printf("\n→ Service: %s\n", current)
+				fmt.Println(stepDone("Service: " + stAccent.Render(current)))
 			}
 			return current, nil
 		}
 		if !isQuiet() {
-			fmt.Printf("\n→ Service %q not found, re-selecting...\n", current)
+			fmt.Println(stepActive(fmt.Sprintf("Service %q not found, re-selecting...", current)))
 		}
 	}
 
@@ -509,10 +505,6 @@ func ensureService(ws, proj, env, current string) (string, error) {
 		return "", fmt.Errorf("parsing services: %w", err)
 	}
 
-	if !isQuiet() {
-		fmt.Println("\n→ No service linked.")
-	}
-
 	items := make([]promptItem, len(services))
 	for i, s := range services {
 		items[i] = promptItem{Slug: s.Slug, Name: s.Name}
@@ -523,7 +515,7 @@ func ensureService(ws, proj, env, current string) (string, error) {
 	}
 	switch action {
 	case "existing":
-		fmt.Printf("  ✓ Service: %s\n", slug)
+		fmt.Println(stepDone("Service: " + stAccent.Render(slug)))
 		return slug, nil
 	case "skip":
 		return "", nil
@@ -584,7 +576,7 @@ func createService(ws, proj, env, name string) (string, error) {
 	if err := json.Unmarshal(body, &svc); err != nil {
 		return "", fmt.Errorf("parsing service response: %w", err)
 	}
-	fmt.Printf("  ✓ Created service %q\n", svc.Name)
+	fmt.Println(stepDone("Created service " + stAccent.Render(svc.Name)))
 	return svc.Slug, nil
 }
 

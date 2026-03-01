@@ -200,13 +200,13 @@ func followDeploy(deployID string) error {
 		if dpl.Error {
 			stop()
 			if dpl.ErrorDtl != "" {
-				return fmt.Errorf("deploy failed: %s", dpl.ErrorDtl)
+				return fmt.Errorf("%s %s", stError.Render(symCross+" Deploy failed:"), dpl.ErrorDtl)
 			}
-			return fmt.Errorf("deploy failed")
+			return fmt.Errorf("%s", stError.Render(symCross+" Deploy failed"))
 		}
 		if dpl.Complete {
 			stop()
-			fmt.Println("\nDeploy complete.")
+			fmt.Println("\n" + stSuccess.Render(symCheck+" Deploy complete."))
 			return nil
 		}
 	}
@@ -241,11 +241,11 @@ func followDeployLog(deployID string) error {
 		switch result.Status {
 		case "complete", "success":
 			stop()
-			fmt.Println("\nDeploy complete.")
+			fmt.Println("\n" + stSuccess.Render(symCheck+" Deploy complete."))
 			return nil
 		case "error", "failed":
 			stop()
-			return fmt.Errorf("deploy failed")
+			return fmt.Errorf("%s", stError.Render(symCross+" Deploy failed"))
 		}
 	}
 }

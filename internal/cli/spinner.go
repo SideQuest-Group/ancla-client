@@ -11,7 +11,7 @@ import (
 // started — call s.Start() to begin. The spinner is suppressed when stdout
 // is not a terminal or when JSON output is requested.
 func newSpinner(msg string) *spinner.Spinner {
-	s := spinner.New(spinner.CharSets[14], 100*time.Millisecond, spinner.WithWriter(os.Stderr))
+	s := spinner.New(spinner.CharSets[14], 100*time.Millisecond, spinner.WithWriter(os.Stderr), spinner.WithColor("fgHiCyan"))
 	s.Suffix = " " + msg
 	return s
 }

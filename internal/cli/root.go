@@ -71,6 +71,149 @@ func init() {
 		&cobra.Group{ID: "resources", Title: "Resources:"},
 		&cobra.Group{ID: "config", Title: "Configuration:"},
 	)
+
+	// Custom help with bold headers and branded banner
+	rootCmd.SetHelpFunc(styledHelp)
+}
+
+// styledHelp renders a fully custom help screen with brand styling.
+func styledHelp(cmd *cobra.Command, _ []string) {
+	var b strings.Builder
+
+	if cmd == rootCmd {
+		renderRootHelp(&b, cmd)
+	} else {
+		renderSubHelp(&b, cmd)
+	}
+
+	fmt.Print(b.String())
+}
+
+func renderRootHelp(b *strings.Builder, cmd *cobra.Command) {
+	// Banner
+	b.WriteString(stHeading.Render(symAnchor + " Ancla CLI"))
+	b.WriteString(stDim.Render(" v"+Version) + "\n")
+	b.WriteString(stDim.Render("  Ship it.") + "\n\n")
+
+	// Description
+	for _, line := range strings.Split(cmd.Long, "\n") {
+		b.WriteString("  " + line + "\n")
+	}
+	b.WriteString("\n")
+
+	// Usage
+	b.WriteString(stHeading.Render("Usage") + "\n")
+	b.WriteString("  ancla <command> [flags]\n\n")
+
+	// Command groups
+	for _, group := range cmd.Groups() {
+		title := strings.TrimSuffix(group.Title, ":")
+		b.WriteString(stHeading.Render(title) + "\n")
+		for _, c := range cmd.Commands() {
+			if c.GroupID == group.ID && c.IsAvailableCommand() {
+				b.WriteString("  " + stCmdName.Render(c.Name()) + stDim.Render(c.Short) + "\n")
+			}
+		}
+		b.WriteString("\n")
+	}
+
+	// Additional commands (no group)
+	var extra []*cobra.Command
+	for _, c := range cmd.Commands() {
+		if c.GroupID == "" && c.IsAvailableCommand() && c.Name() != "help" {
+			extra = append(extra, c)
+		}
+	}
+	if len(extra) > 0 {
+		b.WriteString(stHeading.Render("Additional Commands") + "\n")
+		for _, c := range extra {
+			b.WriteString("  " + stCmdName.Render(c.Name()) + stDim.Render(c.Short) + "\n")
+		}
+		b.WriteString("\n")
+	}
+
+	// Flags
+	renderFlags(b, cmd)
+
+	// Footer
+	b.WriteString(stDim.Render("  Run 'ancla <command> --help' for details on any command.") + "\n")
+}
+
+func renderSubHelp(b *strings.Builder, cmd *cobra.Command) {
+	// Header
+	b.WriteString(stHeading.Render(cmd.CommandPath()))
+	if cmd.Short != "" {
+		b.WriteString(stDim.Render(" — " + cmd.Short))
+	}
+	b.WriteString("\n")
+
+	// Long description
+	if cmd.Long != "" && cmd.Long != cmd.Short {
+		b.WriteString("\n")
+		for _, line := range strings.Split(cmd.Long, "\n") {
+			b.WriteString("  " + line + "\n")
+		}
+	}
+	b.WriteString("\n")
+
+	// Usage
+	b.WriteString(stHeading.Render("Usage") + "\n")
+	if cmd.HasAvailableSubCommands() {
+		b.WriteString("  " + cmd.UseLine() + " [command]\n\n")
+	} else {
+		b.WriteString("  " + cmd.UseLine() + "\n\n")
+	}
+
+	// Aliases
+	if len(cmd.Aliases) > 0 {
+		b.WriteString(stHeading.Render("Aliases") + "\n")
+		all := append([]string{cmd.Name()}, cmd.Aliases...)
+		b.WriteString("  " + strings.Join(all, ", ") + "\n\n")
+	}
+
+	// Examples
+	if cmd.Example != "" {
+		b.WriteString(stHeading.Render("Examples") + "\n")
+		b.WriteString(cmd.Example + "\n\n")
+	}
+
+	// Sub-commands
+	var available []*cobra.Command
+	for _, c := range cmd.Commands() {
+		if c.IsAvailableCommand() {
+			available = append(available, c)
+		}
+	}
+	if len(available) > 0 {
+		b.WriteString(stHeading.Render("Commands") + "\n")
+		for _, c := range available {
+			b.WriteString("  " + stCmdName.Render(c.Name()) + stDim.Render(c.Short) + "\n")
+		}
+		b.WriteString("\n")
+	}
+
+	// Flags
+	renderFlags(b, cmd)
+
+	// Global flags
+	inherited := cmd.InheritedFlags()
+	if inherited.HasAvailableFlags() {
+		b.WriteString(stHeading.Render("Global Flags") + "\n")
+		b.WriteString(inherited.FlagUsages() + "\n")
+	}
+
+	// Footer
+	if cmd.HasAvailableSubCommands() {
+		b.WriteString(stDim.Render("  Run '"+cmd.CommandPath()+" <command> --help' for details.") + "\n")
+	}
+}
+
+func renderFlags(b *strings.Builder, cmd *cobra.Command) {
+	flags := cmd.LocalFlags()
+	if flags.HasAvailableFlags() {
+		b.WriteString(stHeading.Render("Flags") + "\n")
+		b.WriteString(flags.FlagUsages() + "\n")
+	}
 }
 
 // isJSON returns true when the user requested JSON output.
