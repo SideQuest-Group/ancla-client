@@ -5,9 +5,14 @@ import (
 	"fmt"
 )
 
+// envPathSDK builds the path prefix up to the environment level.
+func envPathSDK(ws, proj, env string) string {
+	return fmt.Sprintf("/workspaces/%s/projects/%s/envs/%s", ws, proj, env)
+}
+
 // servicePath builds the base path for service operations within an environment.
 func servicePath(ws, proj, env string) string {
-	return fmt.Sprintf("/workspaces/%s/projects/%s/envs/%s/services/", ws, proj, env)
+	return envPathSDK(ws, proj, env) + "/services/"
 }
 
 // ListServices returns all services within an environment.

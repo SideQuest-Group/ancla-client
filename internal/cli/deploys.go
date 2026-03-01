@@ -27,7 +27,7 @@ var deploysCmd = &cobra.Command{
 Deploys represent the rollout of a build to your infrastructure. Each deploy
 tracks its progress and can be inspected for status, errors, and logs.
 Use sub-commands to list deploys, view details, or stream deploy logs.`,
-	Example: "  ancla deploys list my-ws/my-proj/staging/my-svc\n  ancla deploys get <deploy-id>\n  ancla deploys log <deploy-id>",
+	Example: "  ancla deploys list my-ws/my-proj/staging/my-svc\n  ancla deploys get <ws>/<proj>/<env>/<svc> <deploy-id>\n  ancla deploys log <ws>/<proj>/<env>/<svc> <deploy-id>",
 	GroupID: "resources",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return deploysListCmd.RunE(cmd, args)
@@ -90,12 +90,17 @@ var deploysListCmd = &cobra.Command{
 }
 
 var deploysGetCmd = &cobra.Command{
-	Use:     "get <deploy-id>",
+	Use:     "get [<ws>/<proj>/<env>/<svc>] <deploy-id>",
 	Short:   "Get deploy details",
-	Example: "  ancla deploys get abc12345",
-	Args:    cobra.ExactArgs(1),
+	Example: "  ancla deploys get abc12345\n  ancla deploys get my-ws/my-proj/staging/my-svc abc12345",
+	Args:    cobra.RangeArgs(1, 2),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		req, _ := http.NewRequest("GET", apiURL("/deploys/"+args[0]+"/detail"), nil)
+		ep, deployID, err := resolveDeployArgs(args)
+		if err != nil {
+			return err
+		}
+
+		req, _ := http.NewRequest("GET", apiURL(ep+"/deploys/"+deployID), nil)
 		body, err := doRequest(req)
 		if err != nil {
 			return err
@@ -139,19 +144,24 @@ var deploysGetCmd = &cobra.Command{
 
 		follow, _ := cmd.Flags().GetBool("follow")
 		if follow && !dpl.Complete && !dpl.Error {
-			return followDeploy(args[0])
+			return followDeploy(ep, deployID)
 		}
 		return nil
 	},
 }
 
 var deploysLogCmd = &cobra.Command{
-	Use:     "log <deploy-id>",
+	Use:     "log [<ws>/<proj>/<env>/<svc>] <deploy-id>",
 	Short:   "Show deploy log",
-	Example: "  ancla deploys log abc12345",
-	Args:    cobra.ExactArgs(1),
+	Example: "  ancla deploys log abc12345\n  ancla deploys log my-ws/my-proj/staging/my-svc abc12345",
+	Args:    cobra.RangeArgs(1, 2),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		req, _ := http.NewRequest("GET", apiURL("/deploys/"+args[0]+"/log"), nil)
+		ep, deployID, err := resolveDeployArgs(args)
+		if err != nil {
+			return err
+		}
+
+		req, _ := http.NewRequest("GET", apiURL(ep+"/deploys/"+deployID+"/log"), nil)
 		body, err := doRequest(req)
 		if err != nil {
 			return err
@@ -172,20 +182,45 @@ var deploysLogCmd = &cobra.Command{
 
 		follow, _ := cmd.Flags().GetBool("follow")
 		if follow {
-			return followDeployLog(args[0])
+			return followDeployLog(ep, deployID)
 		}
 		return nil
 	},
 }
 
+// resolveDeployArgs handles two calling conventions:
+//
+//	deploys get <deploy-id>                         — uses linked service context
+//	deploys get <ws>/<proj>/<env>/<svc> <deploy-id> — explicit path
+//
+// Returns the env-level path prefix and deploy ID.
+func resolveDeployArgs(args []string) (ep, deployID string, err error) {
+	if len(args) == 2 {
+		ws, proj, env, _, e := resolveServicePath(args[:1])
+		if e != nil {
+			return "", "", e
+		}
+		if proj == "" || env == "" {
+			return "", "", fmt.Errorf("at least <ws>/<proj>/<env> required")
+		}
+		return envPath(ws, proj, env), args[1], nil
+	}
+	// Single arg — deploy ID, resolve from linked config.
+	ws, proj, env, svc, e := resolveServicePath(nil)
+	if e != nil || ws == "" || proj == "" || env == "" || svc == "" {
+		return "", "", fmt.Errorf("no linked service — provide <ws>/<proj>/<env>/<svc> before the deploy ID, or run `ancla link`")
+	}
+	return envPath(ws, proj, env), args[0], nil
+}
+
 // followDeploy polls deploy status until complete or error.
-func followDeploy(deployID string) error {
+func followDeploy(ep, deployID string) error {
 	stop := spin("Deploying...")
 	defer stop()
 
 	for {
 		time.Sleep(3 * time.Second)
-		req, _ := http.NewRequest("GET", apiURL("/deploys/"+deployID+"/detail"), nil)
+		req, _ := http.NewRequest("GET", apiURL(ep+"/deploys/"+deployID), nil)
 		body, err := doRequest(req)
 		if err != nil {
 			return err
@@ -213,14 +248,14 @@ func followDeploy(deployID string) error {
 }
 
 // followDeployLog polls deploy logs until complete or error.
-func followDeployLog(deployID string) error {
+func followDeployLog(ep, deployID string) error {
 	var lastLen int
 	stop := spin("Deploying...")
 	defer stop()
 
 	for {
 		time.Sleep(3 * time.Second)
-		req, _ := http.NewRequest("GET", apiURL("/deploys/"+deployID+"/log"), nil)
+		req, _ := http.NewRequest("GET", apiURL(ep+"/deploys/"+deployID+"/log"), nil)
 		body, err := doRequest(req)
 		if err != nil {
 			return err

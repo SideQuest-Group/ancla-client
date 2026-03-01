@@ -28,32 +28,32 @@ updates.`,
 			return fmt.Errorf("not fully linked — run `ancla link <ws>/<proj>/<env>/<svc>` first")
 		}
 
-		// Get service pipeline status to find latest deployment
-		svcPath := "/workspaces/" + cfg.Workspace + "/projects/" + cfg.Project + "/envs/" + cfg.Env + "/services/" + cfg.Service
-		req, _ := http.NewRequest("GET", apiURL(svcPath+"/pipeline-status"), nil)
+		// Get latest deploy from the deploys list.
+		svcPath := servicePath(cfg.Workspace, cfg.Project, cfg.Env, cfg.Service)
+		req, _ := http.NewRequest("GET", apiURL(svcPath+"/deploys/"), nil)
 		body, err := doRequest(req)
 		if err != nil {
 			return err
 		}
 
-		var status struct {
-			Deploy *struct {
-				ID     string `json:"id"`
-				Status string `json:"status"`
-			} `json:"deploy"`
+		var deploys struct {
+			Items []struct {
+				ID string `json:"id"`
+			} `json:"items"`
 		}
-		if err := json.Unmarshal(body, &status); err != nil {
-			return fmt.Errorf("parsing pipeline status: %w", err)
+		if err := json.Unmarshal(body, &deploys); err != nil {
+			return fmt.Errorf("parsing deploys: %w", err)
 		}
-		if status.Deploy == nil || status.Deploy.ID == "" {
+		if len(deploys.Items) == 0 || deploys.Items[0].ID == "" {
 			fmt.Println("No deployments found.")
 			return nil
 		}
 
-		deployID := status.Deploy.ID
+		deployID := deploys.Items[0].ID
+		ep := envPath(cfg.Workspace, cfg.Project, cfg.Env)
 
-		// Fetch deployment logs
-		logReq, _ := http.NewRequest("GET", apiURL("/deploys/"+deployID+"/log"), nil)
+		// Fetch deployment logs (env-level endpoint).
+		logReq, _ := http.NewRequest("GET", apiURL(ep+"/deploys/"+deployID+"/log"), nil)
 		logBody, err := doRequest(logReq)
 		if err != nil {
 			return err
@@ -69,7 +69,11 @@ updates.`,
 			return printJSON(result)
 		}
 
-		fmt.Printf("Deployment %s — %s\n\n", deployID[:8], colorStatus(result.Status))
+		shortID := deployID
+		if len(shortID) > 8 {
+			shortID = shortID[:8]
+		}
+		fmt.Printf("Deployment %s — %s\n\n", shortID, colorStatus(result.Status))
 		if result.LogText != "" {
 			fmt.Print(result.LogText)
 		} else {
@@ -78,7 +82,7 @@ updates.`,
 
 		follow, _ := cmd.Flags().GetBool("follow")
 		if follow {
-			return followDeployLog(deployID)
+			return followDeployLog(ep, deployID)
 		}
 		return nil
 	},

@@ -43,8 +43,7 @@ environment, service details, and current pipeline status in a single view.`,
 
 		// If we have a full service path, fetch pipeline status
 		if cfg.Workspace != "" && cfg.Project != "" && cfg.Env != "" && cfg.Service != "" {
-			svcPath := "/workspaces/" + cfg.Workspace + "/projects/" + cfg.Project + "/envs/" + cfg.Env + "/services/" + cfg.Service
-			req, _ := http.NewRequest("GET", apiURL(svcPath+"/pipeline/status"), nil)
+			req, _ := http.NewRequest("GET", apiURL(pipelineStatusPath(cfg.Workspace, cfg.Project, cfg.Env, cfg.Service)), nil)
 			body, err := doRequest(req)
 			if err == nil {
 				var status struct {

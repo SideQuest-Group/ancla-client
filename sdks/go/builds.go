@@ -1,6 +1,9 @@
 package ancla
 
-import "context"
+import (
+	"context"
+	"fmt"
+)
 
 // ListBuilds returns all builds for a service.
 func (c *Client) ListBuilds(ctx context.Context, ws, proj, env, svc string) (*BuildList, error) {
@@ -11,10 +14,11 @@ func (c *Client) ListBuilds(ctx context.Context, ws, proj, env, svc string) (*Bu
 	return &result, nil
 }
 
-// GetBuildLog returns build log details for a specific build.
-func (c *Client) GetBuildLog(ctx context.Context, buildID string) (*BuildLog, error) {
+// GetBuildLog returns build log details by version number.
+func (c *Client) GetBuildLog(ctx context.Context, ws, proj, env, svc string, version int) (*BuildLog, error) {
 	var result BuildLog
-	if err := c.do(ctx, "GET", "/builds/"+buildID+"/log", nil, &result); err != nil {
+	path := fmt.Sprintf("%s%s/builds/%d/log", servicePath(ws, proj, env), svc, version)
+	if err := c.do(ctx, "GET", path, nil, &result); err != nil {
 		return nil, err
 	}
 	return &result, nil

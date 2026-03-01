@@ -57,14 +57,19 @@ func resolveServicePath(args []string) (ws, proj, env, svc string, err error) {
 	return
 }
 
+// envPath builds the nested API path prefix up to the environment level.
+func envPath(ws, proj, env string) string {
+	return fmt.Sprintf("/workspaces/%s/projects/%s/envs/%s", ws, proj, env)
+}
+
 // servicePath builds the nested API path prefix for a service resource.
 func servicePath(ws, proj, env, svc string) string {
-	return fmt.Sprintf("/workspaces/%s/projects/%s/envs/%s/services/%s", ws, proj, env, svc)
+	return envPath(ws, proj, env) + "/services/" + svc
 }
 
 // serviceBasePath builds the nested API path prefix up to the environment level.
 func serviceBasePath(ws, proj, env string) string {
-	return fmt.Sprintf("/workspaces/%s/projects/%s/envs/%s/services/", ws, proj, env)
+	return envPath(ws, proj, env) + "/services/"
 }
 
 var servicesListCmd = &cobra.Command{
@@ -266,7 +271,7 @@ var servicesStatusCmd = &cobra.Command{
 			return fmt.Errorf("usage: services status <ws>/<proj>/<env>/<svc>")
 		}
 
-		req, _ := http.NewRequest("GET", apiURL(servicePath(ws, proj, env, svc)+"/pipeline-status"), nil)
+		req, _ := http.NewRequest("GET", apiURL(pipelineStatusPath(ws, proj, env, svc)), nil)
 		body, err := doRequest(req)
 		if err != nil {
 			return err

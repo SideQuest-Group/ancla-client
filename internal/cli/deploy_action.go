@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 
@@ -18,6 +19,10 @@ import (
 func init() {
 	rootCmd.AddCommand(deployActionCmd)
 	deployActionCmd.Flags().Bool("no-follow", false, "Fire and forget — don't stream build logs")
+	// Suppress cobra usage dump on RunE errors — deploy errors are handled
+	// with styled error cards, not usage text.
+	deployActionCmd.SilenceUsage = true
+	deployActionCmd.SilenceErrors = true
 }
 
 var deployActionCmd = &cobra.Command{
@@ -148,7 +153,7 @@ func deployDirect(cmd *cobra.Command, args []string) error {
 	return triggerAndFollow(cmd, ws, proj, env, svc)
 }
 
-// triggerAndFollow POSTs the deploy and optionally follows the build log.
+// triggerAndFollow POSTs the deploy and polls builds/deploys until complete.
 func triggerAndFollow(cmd *cobra.Command, ws, proj, env, svc string) error {
 	stop := spin("Triggering deploy...")
 	req, _ := http.NewRequest("POST", apiURL(servicePath(ws, proj, env, svc)+"/deploy"), nil)
@@ -158,10 +163,8 @@ func triggerAndFollow(cmd *cobra.Command, ws, proj, env, svc string) error {
 		return err
 	}
 
-	var result struct {
-		BuildID  string `json:"build_id"`
-		DeployID string `json:"deploy_id"`
-	}
+	// Parse whatever the server returns — field names vary.
+	var result map[string]any
 	if err := json.Unmarshal(body, &result); err != nil {
 		fmt.Println("Deploy triggered, but the response could not be parsed.")
 		return nil
@@ -173,28 +176,106 @@ func triggerAndFollow(cmd *cobra.Command, ws, proj, env, svc string) error {
 
 	noFollow, _ := cmd.Flags().GetBool("no-follow")
 	if noFollow {
-		fmt.Println(stepDone("Deploy triggered. Build: " + stDim.Render(result.BuildID)))
+		fmt.Println(stepDone("Deploy triggered."))
 		return nil
 	}
 
-	// Follow build phase (if there's a build)
-	if result.BuildID != "" {
-		fmt.Println(stepActive("Build " + stDim.Render(result.BuildID)))
-		if err := followBuild(result.BuildID); err != nil {
-			return err
-		}
+	// Poll builds list + deploys list to track the pipeline.
+	return followPipeline(ws, proj, env, svc)
+}
+
+// pipelineStatusPath returns the project-level pipeline status URL with
+// service and env as query params.
+func pipelineStatusPath(ws, proj, env, svc string) string {
+	return fmt.Sprintf("/workspaces/%s/projects/%s/pipeline/status?service=%s&env=%s", ws, proj, svc, env)
+}
+
+// followPipeline polls the pipeline status endpoint until both the build
+// and deploy phases complete (or one errors).
+//
+// Important: the deploy stage is only evaluated AFTER the build completes,
+// because until a new deploy record is created (which happens post-build),
+// the pipeline returns the previous deploy's status — which may be "success".
+func followPipeline(ws, proj, env, svc string) error {
+	type stageStatus struct {
+		Status      string  `json:"status"`
+		ErrorDetail *string `json:"error_detail"`
 	}
 
-	// Follow deploy phase
-	if result.DeployID != "" {
-		fmt.Println(stepActive("Deploy " + stDim.Render(result.DeployID)))
-		if err := followDeploy(result.DeployID); err != nil {
+	buildDone := false
+	prevBuildStatus := ""
+	prevDeployStatus := ""
+	stop := spin("Building...")
+	defer stop()
+
+	for first := true; ; first = false {
+		if !first {
+			time.Sleep(3 * time.Second)
+		}
+
+		req, _ := http.NewRequest("GET", apiURL(pipelineStatusPath(ws, proj, env, svc)), nil)
+		body, err := doRequest(req)
+		if err != nil {
 			return err
 		}
-	}
 
-	fmt.Println("\n" + stSuccess.Render(symCheck+" Deploy pipeline complete."))
-	return nil
+		var status struct {
+			Build  *stageStatus `json:"build"`
+			Deploy *stageStatus `json:"deploy"`
+		}
+		if err := json.Unmarshal(body, &status); err != nil {
+			return fmt.Errorf("parsing pipeline status: %w", err)
+		}
+
+		// Track build phase.
+		if !buildDone && status.Build != nil && status.Build.Status != prevBuildStatus {
+			prevBuildStatus = status.Build.Status
+			switch status.Build.Status {
+			case "success":
+				stop()
+				fmt.Println(stepDone("Build complete"))
+				buildDone = true
+				// Reset deploy tracking — ignore any stale deploy status
+				// from before this build. The new deploy will appear shortly.
+				prevDeployStatus = ""
+				stop = spin("Deploying...")
+			case "error":
+				stop()
+				pe := &pipelineError{
+					Kind:      errBuild,
+					Workspace: ws, Project: proj, Env: env, Service: svc,
+				}
+				if status.Build.ErrorDetail != nil {
+					pe.Detail = *status.Build.ErrorDetail
+				}
+				renderErrorCard(pe)
+				return fmt.Errorf("build failed")
+			}
+		}
+
+		// Track deploy phase — only after build is done.
+		if buildDone && status.Deploy != nil && status.Deploy.Status != prevDeployStatus {
+			prevDeployStatus = status.Deploy.Status
+			switch status.Deploy.Status {
+			case "success":
+				stop()
+				fmt.Println(stepDone("Deploy complete"))
+				fmt.Println("\n" + stSuccess.Render(symCheck+" Deploy pipeline complete."))
+				return nil
+			case "error":
+				stop()
+				pe := &pipelineError{
+					Kind:      errDeploy,
+					Workspace: ws, Project: proj, Env: env, Service: svc,
+				}
+				if status.Deploy.ErrorDetail != nil {
+					pe.Detail = *status.Deploy.ErrorDetail
+				}
+				renderErrorCard(pe)
+				return fmt.Errorf("deploy failed")
+			}
+		}
+	}
 }
 
 // --- Preflight ensure steps ---

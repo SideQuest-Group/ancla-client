@@ -273,7 +273,7 @@ func TestGetDeploy(t *testing.T) {
 		Created:  "2025-01-01T00:00:00Z",
 	}
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/api/v1/deploys/dep-1/detail" {
+		if r.URL.Path != "/api/v1/workspaces/ws/projects/proj/envs/env/deploys/dep-1" {
 			t.Errorf("unexpected path %s", r.URL.Path)
 		}
 		json.NewEncoder(w).Encode(dpl)
@@ -281,7 +281,7 @@ func TestGetDeploy(t *testing.T) {
 	defer ts.Close()
 
 	c := newTestClient(t, ts)
-	result, err := c.GetDeploy(context.Background(), "dep-1")
+	result, err := c.GetDeploy(context.Background(), "ws", "proj", "env", "dep-1")
 	if err != nil {
 		t.Fatal(err)
 	}

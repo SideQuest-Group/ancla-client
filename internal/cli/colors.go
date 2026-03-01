@@ -1,10 +1,11 @@
 package cli
 
 import (
-	"bytes"
 	"fmt"
+	"regexp"
 	"strings"
-	"text/tabwriter"
+
+	"github.com/mattn/go-runewidth"
 )
 
 // colorStatus returns the status string with a colored dot prefix.
@@ -13,26 +14,57 @@ func colorStatus(status string) string {
 	return statusDot(status) + " " + status
 }
 
-// table writes rows through tabwriter with a styled header line.
-// The first row is treated as the header and rendered with the brand style.
-func table(headers []string, rows [][]string) {
-	var buf bytes.Buffer
-	w := tabwriter.NewWriter(&buf, 0, 0, 2, ' ', 0)
-	fmt.Fprintln(w, strings.Join(headers, "\t"))
-	for _, row := range rows {
-		fmt.Fprintln(w, strings.Join(row, "\t"))
-	}
-	w.Flush()
+var ansiRe = regexp.MustCompile(`\x1b\[[0-9;]*m`)
 
-	lines := strings.Split(buf.String(), "\n")
-	for i, line := range lines {
-		if line == "" {
-			continue
+// visLen returns the visible display width of a string, stripping ANSI escape
+// codes and accounting for wide Unicode characters (e.g. ● is 1 column).
+func visLen(s string) int {
+	return runewidth.StringWidth(ansiRe.ReplaceAllString(s, ""))
+}
+
+// table writes rows with ANSI-aware column alignment.
+// Column widths are computed from visible string lengths so that ANSI escape
+// codes (e.g. from colorStatus) don't break alignment.
+func table(headers []string, rows [][]string) {
+	cols := len(headers)
+	widths := make([]int, cols)
+	for i, h := range headers {
+		if n := visLen(h); n > widths[i] {
+			widths[i] = n
 		}
-		if i == 0 {
-			fmt.Println(stTableHeader.Render(line))
-		} else {
-			fmt.Println(line)
+	}
+	for _, row := range rows {
+		for i := 0; i < cols && i < len(row); i++ {
+			if n := visLen(row[i]); n > widths[i] {
+				widths[i] = n
+			}
 		}
+	}
+
+	const gap = 2
+	padCell := func(cell string, width int) string {
+		pad := width - visLen(cell) + gap
+		if pad < gap {
+			pad = gap
+		}
+		return cell + strings.Repeat(" ", pad)
+	}
+
+	var hdr strings.Builder
+	for i, h := range headers {
+		hdr.WriteString(padCell(h, widths[i]))
+	}
+	fmt.Println(stTableHeader.Render(hdr.String()))
+
+	for _, row := range rows {
+		var line strings.Builder
+		for i := 0; i < cols; i++ {
+			cell := ""
+			if i < len(row) {
+				cell = row[i]
+			}
+			line.WriteString(padCell(cell, widths[i]))
+		}
+		fmt.Println(line.String())
 	}
 }
