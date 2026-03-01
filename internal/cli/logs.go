@@ -36,20 +36,18 @@ updates.`,
 			return err
 		}
 
-		var deploys struct {
-			Items []struct {
-				ID string `json:"id"`
-			} `json:"items"`
+		var deploys []struct {
+			ID string `json:"id"`
 		}
 		if err := json.Unmarshal(body, &deploys); err != nil {
 			return fmt.Errorf("parsing deploys: %w", err)
 		}
-		if len(deploys.Items) == 0 || deploys.Items[0].ID == "" {
+		if len(deploys) == 0 || deploys[0].ID == "" {
 			fmt.Println("No deployments found.")
 			return nil
 		}
 
-		deployID := deploys.Items[0].ID
+		deployID := deploys[0].ID
 		ep := envPath(cfg.Workspace, cfg.Project, cfg.Env)
 
 		// Fetch deployment logs (env-level endpoint).
