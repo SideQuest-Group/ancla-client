@@ -107,8 +107,6 @@ func runDeploy(cmd *cobra.Command, args []string) error {
 		if err = ensureDockerfile(); err != nil {
 			return err
 		}
-	} else if !isQuiet() {
-		fmt.Println("\n" + stepActive("Buildpack service — skipping Dockerfile check."))
 	}
 
 	// 7. Save link context if anything changed
@@ -122,13 +120,11 @@ func runDeploy(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	path := fmt.Sprintf("%s/%s/%s/%s", ws, proj, env, svc)
 	if !isQuiet() {
 		if changed {
-			fmt.Println("\n" + stepDone("Linked: "+stAccent.Render(path)))
-			fmt.Println(stDim.Render("  Saved to .ancla/config.yaml"))
+			fmt.Println(stDim.Render("  Linked → saved to .ancla/config.yaml"))
 		}
-		fmt.Printf("\n%s %s\n", stBold.Render("Deploying"), stAccent.Render(path))
+		renderDeployCard(ws, proj, env, svc, strategy)
 	}
 
 	// --- Existing deploy logic ---
@@ -145,9 +141,9 @@ func deployDirect(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("all four segments required: <ws>/<proj>/<env>/<svc>")
 	}
 
-	path := fmt.Sprintf("%s/%s/%s/%s", ws, proj, env, svc)
 	if !isQuiet() {
-		fmt.Printf("%s %s\n", stBold.Render("Deploying"), stAccent.Render(path))
+		strategy := fetchServiceBuildStrategy(ws, proj, env, svc)
+		renderDeployCard(ws, proj, env, svc, strategy)
 	}
 
 	return triggerAndFollow(cmd, ws, proj, env, svc)
@@ -310,9 +306,6 @@ func ensureWorkspace(current string) (string, error) {
 	if current != "" {
 		req, _ := http.NewRequest("GET", apiURL("/workspaces/"+current+"/"), nil)
 		if _, err := doRequest(req); err == nil {
-			if !isQuiet() {
-				fmt.Println(stepDone("Workspace: " + stAccent.Render(current)))
-			}
 			return current, nil
 		}
 		if !isQuiet() {
@@ -404,9 +397,6 @@ func ensureProject(ws, current string) (string, error) {
 	if current != "" {
 		req, _ := http.NewRequest("GET", apiURL("/workspaces/"+ws+"/projects/"+current+"/"), nil)
 		if _, err := doRequest(req); err == nil {
-			if !isQuiet() {
-				fmt.Println(stepDone("Project: " + stAccent.Render(current)))
-			}
 			return current, nil
 		}
 		if !isQuiet() {
@@ -484,9 +474,6 @@ func ensureEnv(ws, proj, current string) (string, error) {
 	if current != "" {
 		req, _ := http.NewRequest("GET", apiURL("/workspaces/"+ws+"/projects/"+proj+"/envs/"+current+"/"), nil)
 		if _, err := doRequest(req); err == nil {
-			if !isQuiet() {
-				fmt.Println(stepDone("Environment: " + stAccent.Render(current)))
-			}
 			return current, nil
 		}
 		if !isQuiet() {
@@ -561,9 +548,6 @@ func ensureService(ws, proj, env, current string) (string, error) {
 	if current != "" {
 		req, _ := http.NewRequest("GET", apiURL(servicePath(ws, proj, env, current)), nil)
 		if _, err := doRequest(req); err == nil {
-			if !isQuiet() {
-				fmt.Println(stepDone("Service: " + stAccent.Render(current)))
-			}
 			return current, nil
 		}
 		if !isQuiet() {

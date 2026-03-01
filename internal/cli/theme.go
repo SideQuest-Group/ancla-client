@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/charmbracelet/huh"
@@ -109,4 +110,54 @@ func anclaTheme() *huh.Theme {
 // themed wraps huh fields in a form with the Ancla theme applied.
 func themed(fields ...huh.Field) *huh.Form {
 	return huh.NewForm(huh.NewGroup(fields...)).WithTheme(anclaTheme())
+}
+
+// ─── Deploy Card ────────────────────────────────────────────────
+// Renders a compact deployment manifest before the build starts.
+//
+// Layout:
+//
+//	⚓ Deploy
+//
+//	  birmingham-volleyball / web / production / web
+//	  ───────────────────────────────────────────────
+//
+//	  Workspace     birmingham-volleyball
+//	  Project       web
+//	  Environment   production
+//	  Service       web
+//	  Strategy      buildpack
+
+func renderDeployCard(ws, proj, env, svc, strategy string) {
+	sep := stMuted.Render(" / ")
+	route := stAccent.Render(ws) + sep + stAccent.Render(proj) + sep + stAccent.Render(env) + sep + stBold.Foreground(brandAccent).Render(svc)
+
+	// Compute rule width from the visible route length.
+	routeVis := len(ws) + len(proj) + len(env) + len(svc) + 9 // 3 separators × 3 chars " / "
+	if routeVis < 40 {
+		routeVis = 40
+	}
+	rule := stMuted.Render(strings.Repeat("─", routeVis))
+
+	// Metadata grid — fixed-width labels for alignment.
+	label := lipgloss.NewStyle().Foreground(brandDim).Width(16)
+	val := lipgloss.NewStyle().Foreground(lipgloss.Color("#e2e8f0")) // Slate 200 — bright on dark terms
+	row := func(k, v string) string {
+		return "  " + label.Render(k) + val.Render(v)
+	}
+
+	fmt.Println()
+	fmt.Println(stHeading.Render(symAnchor + " Deploy"))
+	fmt.Println()
+	fmt.Println("  " + route)
+	fmt.Println("  " + rule)
+	fmt.Println()
+	fmt.Println(row("Workspace", ws))
+	fmt.Println(row("Project", proj))
+	fmt.Println(row("Environment", env))
+	fmt.Println(row("Service", svc))
+	if strategy != "" {
+		fmt.Println(row("Strategy", strategy))
+	}
+	fmt.Println()
 }
