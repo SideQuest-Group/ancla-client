@@ -53,17 +53,17 @@ subcommand will prompt to trigger a new build. Use --yes to skip the prompt.`,
 }
 
 var buildsListCmd = &cobra.Command{
-	Use:     "list <ws>/<proj>/<env>/<svc>",
+	Use:     "list [<ws>/<proj>/<env>/<svc>]",
 	Short:   "List builds for a service",
-	Example: "  ancla builds list my-ws/my-proj/staging/my-svc",
-	Args:    cobra.ExactArgs(1),
+	Example: "  ancla builds list\n  ancla builds list my-ws/my-proj/staging/my-svc",
+	Args:    cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ws, proj, env, svc, err := resolveServicePath(args)
 		if err != nil {
 			return err
 		}
 		if proj == "" || env == "" || svc == "" {
-			return fmt.Errorf("usage: builds list <ws>/<proj>/<env>/<svc>")
+			return fmt.Errorf("no linked service — provide <ws>/<proj>/<env>/<svc>, or run `ancla link`")
 		}
 
 		req, _ := http.NewRequest("GET", apiURL(servicePath(ws, proj, env, svc)+"/builds/"), nil)
@@ -114,17 +114,17 @@ var buildsListCmd = &cobra.Command{
 }
 
 var buildsTriggerCmd = &cobra.Command{
-	Use:     "trigger <ws>/<proj>/<env>/<svc>",
+	Use:     "trigger [<ws>/<proj>/<env>/<svc>]",
 	Short:   "Trigger a build for a service",
-	Example: "  ancla builds trigger my-ws/my-proj/staging/my-svc",
-	Args:    cobra.ExactArgs(1),
+	Example: "  ancla builds trigger\n  ancla builds trigger my-ws/my-proj/staging/my-svc",
+	Args:    cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ws, proj, env, svc, err := resolveServicePath(args)
 		if err != nil {
 			return err
 		}
 		if proj == "" || env == "" || svc == "" {
-			return fmt.Errorf("usage: builds trigger <ws>/<proj>/<env>/<svc>")
+			return fmt.Errorf("no linked service — provide <ws>/<proj>/<env>/<svc>, or run `ancla link`")
 		}
 
 		stop := spin("Triggering build...")
@@ -166,10 +166,11 @@ var buildsTriggerCmd = &cobra.Command{
 }
 
 var buildsLogCmd = &cobra.Command{
-	Use:     "log [<ws>/<proj>/<env>/<svc>] <version>",
+	Use:     "log [<ws>/<proj>/<env>/<svc>] [version]",
 	Short:   "Show build log",
-	Example: "  ancla builds log 3\n  ancla builds log my-ws/my-proj/staging/my-svc 2",
-	Args:    cobra.RangeArgs(1, 2),
+	Long:    "Show the log for a build. If no version is given, shows the latest build.",
+	Example: "  ancla builds log\n  ancla builds log 3\n  ancla builds log my-ws/my-proj/staging/my-svc 2",
+	Args:    cobra.RangeArgs(0, 2),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		sp, version, err := resolveBuildArgs(args)
 		if err != nil {
@@ -206,10 +207,11 @@ var buildsLogCmd = &cobra.Command{
 	},
 }
 
-// resolveBuildArgs handles two calling conventions:
+// resolveBuildArgs handles three calling conventions:
 //
-//	builds log <version>                              — uses linked service context
-//	builds log <ws>/<proj>/<env>/<svc> <version>      — explicit path
+//	builds log                                        — latest build, linked service
+//	builds log <version>                              — specific version, linked service
+//	builds log <ws>/<proj>/<env>/<svc> <version>      — explicit path + version
 //
 // Returns the service path prefix and build version string.
 func resolveBuildArgs(args []string) (sp, version string, err error) {
@@ -223,12 +225,52 @@ func resolveBuildArgs(args []string) (sp, version string, err error) {
 		}
 		return servicePath(ws, proj, env, svc), args[1], nil
 	}
-	// Single arg — version, resolve service from linked config.
+
+	// Resolve linked service for 0- or 1-arg forms.
 	ws, proj, env, svc, e := resolveServicePath(nil)
 	if e != nil || ws == "" || proj == "" || env == "" || svc == "" {
 		return "", "", fmt.Errorf("no linked service — provide <ws>/<proj>/<env>/<svc> before the version, or run `ancla link`")
 	}
-	return servicePath(ws, proj, env, svc), args[0], nil
+	sp = servicePath(ws, proj, env, svc)
+
+	if len(args) == 1 {
+		return sp, args[0], nil
+	}
+
+	// 0 args — fetch latest build version.
+	version, err = latestBuildVersion(sp)
+	if err != nil {
+		return "", "", err
+	}
+	return sp, version, nil
+}
+
+// latestBuildVersion fetches the builds list and returns the highest version number.
+func latestBuildVersion(sp string) (string, error) {
+	req, _ := http.NewRequest("GET", apiURL(sp+"/builds/"), nil)
+	body, err := doRequest(req)
+	if err != nil {
+		return "", fmt.Errorf("fetching builds: %w", err)
+	}
+	var result struct {
+		Items []struct {
+			Version int `json:"version"`
+		} `json:"items"`
+	}
+	if err := json.Unmarshal(body, &result); err != nil {
+		return "", fmt.Errorf("parsing builds: %w", err)
+	}
+	if len(result.Items) == 0 {
+		return "", fmt.Errorf("no builds found — trigger a build first with `ancla build`")
+	}
+	// Items are returned newest-first, but find max to be safe.
+	best := result.Items[0].Version
+	for _, b := range result.Items[1:] {
+		if b.Version > best {
+			best = b.Version
+		}
+	}
+	return fmt.Sprintf("%d", best), nil
 }
 
 // followBuildLog polls the build log endpoint until the build completes or errors.

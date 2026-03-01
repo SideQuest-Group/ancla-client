@@ -35,17 +35,17 @@ Use sub-commands to list deploys, view details, or stream deploy logs.`,
 }
 
 var deploysListCmd = &cobra.Command{
-	Use:     "list <ws>/<proj>/<env>/<svc>",
+	Use:     "list [<ws>/<proj>/<env>/<svc>]",
 	Short:   "List deploys for a service",
-	Example: "  ancla deploys list my-ws/my-proj/staging/my-svc",
-	Args:    cobra.ExactArgs(1),
+	Example: "  ancla deploys list\n  ancla deploys list my-ws/my-proj/staging/my-svc",
+	Args:    cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ws, proj, env, svc, err := resolveServicePath(args)
 		if err != nil {
 			return err
 		}
 		if proj == "" || env == "" || svc == "" {
-			return fmt.Errorf("usage: deploys list <ws>/<proj>/<env>/<svc>")
+			return fmt.Errorf("no linked service — provide <ws>/<proj>/<env>/<svc>, or run `ancla link`")
 		}
 
 		req, _ := http.NewRequest("GET", apiURL(servicePath(ws, proj, env, svc)+"/deploys/"), nil)
@@ -54,24 +54,22 @@ var deploysListCmd = &cobra.Command{
 			return err
 		}
 
-		var result struct {
-			Items []struct {
-				ID       string `json:"id"`
-				Complete bool   `json:"complete"`
-				Error    bool   `json:"error"`
-				Created  string `json:"created"`
-			} `json:"items"`
+		var items []struct {
+			ID       string `json:"id"`
+			Complete bool   `json:"complete"`
+			Error    bool   `json:"error"`
+			Created  string `json:"created"`
 		}
-		if err := json.Unmarshal(body, &result); err != nil {
+		if err := json.Unmarshal(body, &items); err != nil {
 			return fmt.Errorf("parsing response: %w", err)
 		}
 
 		if isJSON() {
-			return printJSON(result)
+			return printJSON(items)
 		}
 
 		var rows [][]string
-		for _, d := range result.Items {
+		for _, d := range items {
 			status := "in progress"
 			if d.Error {
 				status = "error"
