@@ -1,7 +1,8 @@
 # Override global gitignore that excludes internal/
 !internal/
 .ancla/
-ancla
+# Ignore the compiled binary (not the Python package directory)
+/ancla
 
 dist/
 *.exe
