@@ -29,6 +29,9 @@ tracks its progress and can be inspected for status, errors, and logs.
 Use sub-commands to list deploys, view details, or stream deploy logs.`,
 	Example: "  ancla deploys list my-ws/my-proj/staging/my-svc\n  ancla deploys get <deploy-id>\n  ancla deploys log <deploy-id>",
 	GroupID: "resources",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return deploysListCmd.RunE(cmd, args)
+	},
 }
 
 var deploysListCmd = &cobra.Command{

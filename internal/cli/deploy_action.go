@@ -96,9 +96,14 @@ func runDeploy(cmd *cobra.Command, args []string) error {
 		changed = true
 	}
 
-	// 6. Ensure Dockerfile
-	if err = ensureDockerfile(); err != nil {
-		return err
+	// 6. Ensure Dockerfile (skip for buildpack services)
+	strategy := fetchServiceBuildStrategy(ws, proj, env, svc)
+	if strategy != "buildpack" {
+		if err = ensureDockerfile(); err != nil {
+			return err
+		}
+	} else if !isQuiet() {
+		fmt.Println("\n" + stepActive("Buildpack service — skipping Dockerfile check."))
 	}
 
 	// 7. Save link context if anything changed
@@ -115,10 +120,10 @@ func runDeploy(cmd *cobra.Command, args []string) error {
 	path := fmt.Sprintf("%s/%s/%s/%s", ws, proj, env, svc)
 	if !isQuiet() {
 		if changed {
-			fmt.Printf("\n→ Linked: %s\n", path)
-			fmt.Println("  Saved to .ancla/config.yaml")
+			fmt.Println("\n" + stepDone("Linked: "+stAccent.Render(path)))
+			fmt.Println(stDim.Render("  Saved to .ancla/config.yaml"))
 		}
-		fmt.Printf("\nDeploying %s...\n", path)
+		fmt.Printf("\n%s %s\n", stBold.Render("Deploying"), stAccent.Render(path))
 	}
 
 	// --- Existing deploy logic ---
@@ -137,7 +142,7 @@ func deployDirect(cmd *cobra.Command, args []string) error {
 
 	path := fmt.Sprintf("%s/%s/%s/%s", ws, proj, env, svc)
 	if !isQuiet() {
-		fmt.Printf("Deploying %s...\n", path)
+		fmt.Printf("%s %s\n", stBold.Render("Deploying"), stAccent.Render(path))
 	}
 
 	return triggerAndFollow(cmd, ws, proj, env, svc)
@@ -154,7 +159,8 @@ func triggerAndFollow(cmd *cobra.Command, ws, proj, env, svc string) error {
 	}
 
 	var result struct {
-		BuildID string `json:"build_id"`
+		BuildID  string `json:"build_id"`
+		DeployID string `json:"deploy_id"`
 	}
 	if err := json.Unmarshal(body, &result); err != nil {
 		fmt.Println("Deploy triggered, but the response could not be parsed.")
@@ -166,17 +172,28 @@ func triggerAndFollow(cmd *cobra.Command, ws, proj, env, svc string) error {
 	}
 
 	noFollow, _ := cmd.Flags().GetBool("no-follow")
-	if noFollow || result.BuildID == "" {
-		fmt.Printf("Deploy triggered. Build ID: %s\n", result.BuildID)
+	if noFollow {
+		fmt.Println(stepDone("Deploy triggered. Build: " + stDim.Render(result.BuildID)))
 		return nil
 	}
 
-	fmt.Printf("Build ID: %s\n", result.BuildID)
-	if err := followBuild(result.BuildID); err != nil {
-		return err
+	// Follow build phase (if there's a build)
+	if result.BuildID != "" {
+		fmt.Println(stepActive("Build " + stDim.Render(result.BuildID)))
+		if err := followBuild(result.BuildID); err != nil {
+			return err
+		}
 	}
 
-	fmt.Println("Deploy pipeline complete.")
+	// Follow deploy phase
+	if result.DeployID != "" {
+		fmt.Println(stepActive("Deploy " + stDim.Render(result.DeployID)))
+		if err := followDeploy(result.DeployID); err != nil {
+			return err
+		}
+	}
+
+	fmt.Println("\n" + stSuccess.Render(symCheck+" Deploy pipeline complete."))
 	return nil
 }
 
@@ -186,45 +203,42 @@ func triggerAndFollow(cmd *cobra.Command, ws, proj, env, svc string) error {
 // browser login flow.
 func ensureLoggedIn() error {
 	if cfg.APIKey != "" {
-		// Validate the key with a lightweight request
 		req, _ := http.NewRequest("GET", apiURL("/workspaces/"), nil)
 		if _, err := doRequest(req); err == nil {
-			return nil // key is valid
+			return nil
 		}
 		if !isQuiet() {
-			fmt.Println("→ API key is invalid or expired.")
+			fmt.Println(stepActive("API key is invalid or expired."))
 		}
 	} else if !isQuiet() {
-		fmt.Println("→ Not logged in.")
+		fmt.Println(stepActive("Not logged in."))
 	}
 
 	if !isQuiet() {
-		fmt.Println("  Opening browser to log in...")
+		fmt.Println(stDim.Render("  Opening browser to log in..."))
 	}
 	if err := loginBrowser(); err != nil {
 		return fmt.Errorf("login failed: %w", err)
 	}
-	fmt.Println("  ✓ Logged in")
+	fmt.Println(stepDone("Logged in"))
 	return nil
 }
 
 // ensureWorkspace ensures a workspace is selected. Returns the workspace slug.
 func ensureWorkspace(current string) (string, error) {
 	if current != "" {
-		// Validate it exists
 		req, _ := http.NewRequest("GET", apiURL("/workspaces/"+current+"/"), nil)
 		if _, err := doRequest(req); err == nil {
 			if !isQuiet() {
-				fmt.Printf("\n→ Workspace: %s\n", current)
+				fmt.Println(stepDone("Workspace: " + stAccent.Render(current)))
 			}
 			return current, nil
 		}
 		if !isQuiet() {
-			fmt.Printf("\n→ Workspace %q not found, re-selecting...\n", current)
+			fmt.Println(stepActive(fmt.Sprintf("Workspace %q not found, re-selecting...", current)))
 		}
 	}
 
-	// Fetch workspaces
 	req, _ := http.NewRequest("GET", apiURL("/workspaces/"), nil)
 	body, err := doRequest(req)
 	if err != nil {
@@ -242,9 +256,8 @@ func ensureWorkspace(current string) (string, error) {
 
 	switch len(workspaces) {
 	case 0:
-		// Create a personal workspace
 		if !isQuiet() {
-			fmt.Println("\n→ No workspaces found. Creating a personal workspace...")
+			fmt.Println(stepActive("No workspaces found. Creating a personal workspace..."))
 		}
 		name := cfg.Username
 		if name == "" {
@@ -255,28 +268,34 @@ func ensureWorkspace(current string) (string, error) {
 	case 1:
 		ws := workspaces[0]
 		if !isQuiet() {
-			fmt.Printf("\n→ Using workspace: %s (%s)\n", ws.Name, ws.Slug)
+			fmt.Println(stepDone("Workspace: " + stAccent.Render(ws.Slug)))
 		}
 		return ws.Slug, nil
 
 	default:
-		if !isQuiet() {
-			fmt.Println("\n→ No workspace linked.")
-		}
 		items := make([]promptItem, len(workspaces))
 		for i, w := range workspaces {
 			items[i] = promptItem{Slug: w.Slug, Name: w.Name}
 		}
-		slug, err := promptSelect("Select a workspace:", items, "")
+		slug, existing, err := promptSelectOrCreate("Select a workspace:", items, "Create new workspace")
 		if err != nil {
 			return "", err
 		}
-		fmt.Printf("  ✓ Workspace: %s\n", slug)
-		return slug, nil
+		if existing {
+			fmt.Println(stepDone("Workspace: " + stAccent.Render(slug)))
+			return slug, nil
+		}
+		name, err := promptInput("  Workspace name", "")
+		if err != nil {
+			return "", err
+		}
+		if name == "" {
+			return "", fmt.Errorf("workspace name is required")
+		}
+		return createWorkspace(name, false)
 	}
 }
 
-// createWorkspace creates a new workspace via the API and returns its slug.
 func createWorkspace(name string, personal bool) (string, error) {
 	payload, _ := json.Marshal(map[string]any{
 		"name":     name,
@@ -295,7 +314,7 @@ func createWorkspace(name string, personal bool) (string, error) {
 	if err := json.Unmarshal(body, &ws); err != nil {
 		return "", fmt.Errorf("parsing workspace response: %w", err)
 	}
-	fmt.Printf("  ✓ Workspace: %s\n", ws.Slug)
+	fmt.Println(stepDone("Workspace: " + stAccent.Render(ws.Slug)))
 	return ws.Slug, nil
 }
 
@@ -305,16 +324,15 @@ func ensureProject(ws, current string) (string, error) {
 		req, _ := http.NewRequest("GET", apiURL("/workspaces/"+ws+"/projects/"+current+"/"), nil)
 		if _, err := doRequest(req); err == nil {
 			if !isQuiet() {
-				fmt.Printf("\n→ Project: %s\n", current)
+				fmt.Println(stepDone("Project: " + stAccent.Render(current)))
 			}
 			return current, nil
 		}
 		if !isQuiet() {
-			fmt.Printf("\n→ Project %q not found, re-selecting...\n", current)
+			fmt.Println(stepActive(fmt.Sprintf("Project %q not found, re-selecting...", current)))
 		}
 	}
 
-	// Fetch projects
 	req, _ := http.NewRequest("GET", apiURL("/workspaces/"+ws+"/projects/"), nil)
 	body, err := doRequest(req)
 	if err != nil {
@@ -329,26 +347,22 @@ func ensureProject(ws, current string) (string, error) {
 		return "", fmt.Errorf("parsing projects: %w", err)
 	}
 
-	if !isQuiet() {
-		fmt.Println("\n→ No project linked.")
+	items := make([]promptItem, len(projects))
+	for i, p := range projects {
+		items[i] = promptItem{Slug: p.Slug, Name: p.Name}
+	}
+	slug, action, err := promptSelectCreateSkip("Select a project:", items, "Create new project", "Link to workspace only")
+	if err != nil {
+		return "", err
+	}
+	switch action {
+	case "existing":
+		fmt.Println(stepDone("Project: " + stAccent.Render(slug)))
+		return slug, nil
+	case "skip":
+		return "", nil
 	}
 
-	if len(projects) > 0 {
-		items := make([]promptItem, len(projects))
-		for i, p := range projects {
-			items[i] = promptItem{Slug: p.Slug, Name: p.Name}
-		}
-		slug, existing, err := promptSelectOrCreate("Select a project:", items, "Create new project")
-		if err != nil {
-			return "", err
-		}
-		if existing {
-			fmt.Printf("  ✓ Project: %s\n", slug)
-			return slug, nil
-		}
-	}
-
-	// Create new project
 	defaultName := currentDirName()
 	name, err := promptInput("  Project name", defaultName)
 	if err != nil {
@@ -361,7 +375,6 @@ func ensureProject(ws, current string) (string, error) {
 	return createProject(ws, name)
 }
 
-// createProject creates a new project via the API and returns its slug.
 func createProject(ws, name string) (string, error) {
 	slug := slugify(name)
 	payload, _ := json.Marshal(map[string]any{
@@ -381,7 +394,7 @@ func createProject(ws, name string) (string, error) {
 	if err := json.Unmarshal(body, &proj); err != nil {
 		return "", fmt.Errorf("parsing project response: %w", err)
 	}
-	fmt.Printf("  ✓ Created project %q (environments: production, staging, development)\n", proj.Name)
+	fmt.Println(stepDone("Created project " + stAccent.Render(proj.Name) + stDim.Render(" (environments: production, staging, development)")))
 	return proj.Slug, nil
 }
 
@@ -414,23 +427,56 @@ func ensureEnv(ws, proj, current string) (string, error) {
 		return "", fmt.Errorf("parsing environments: %w", err)
 	}
 
-	if len(envs) == 0 {
-		return "", fmt.Errorf("no environments found — this shouldn't happen if the project was just created")
-	}
-
 	if !isQuiet() {
 		fmt.Println("\n→ No environment linked.")
 	}
+
 	items := make([]promptItem, len(envs))
 	for i, e := range envs {
 		items[i] = promptItem{Slug: e.Slug, Name: e.Name}
 	}
-	slug, err := promptSelect("Select an environment:", items, "production")
+	slug, action, err := promptSelectCreateSkip("Select an environment:", items, "Create new environment", "Link to project only")
 	if err != nil {
 		return "", err
 	}
-	fmt.Printf("  ✓ Environment: %s\n", slug)
-	return slug, nil
+	switch action {
+	case "existing":
+		fmt.Printf("  ✓ Environment: %s\n", slug)
+		return slug, nil
+	case "skip":
+		return "", nil
+	}
+
+	// Create new environment
+	name, err := promptInput("  Environment name", "production")
+	if err != nil {
+		return "", err
+	}
+	if name == "" {
+		return "", fmt.Errorf("environment name is required")
+	}
+
+	return createEnv(ws, proj, name)
+}
+
+// createEnv creates a new environment via the API and returns its slug.
+func createEnv(ws, proj, name string) (string, error) {
+	payload, _ := json.Marshal(map[string]string{"name": name})
+	req, _ := http.NewRequest("POST", apiURL("/workspaces/"+ws+"/projects/"+proj+"/envs/"), bytes.NewReader(payload))
+	req.Header.Set("Content-Type", "application/json")
+	body, err := doRequest(req)
+	if err != nil {
+		return "", fmt.Errorf("creating environment: %w", err)
+	}
+	var e struct {
+		Slug string `json:"slug"`
+		Name string `json:"name"`
+	}
+	if err := json.Unmarshal(body, &e); err != nil {
+		return "", fmt.Errorf("parsing environment response: %w", err)
+	}
+	fmt.Printf("  ✓ Created environment %q\n", e.Name)
+	return e.Slug, nil
 }
 
 // ensureService ensures a service is selected within the environment.
@@ -467,19 +513,20 @@ func ensureService(ws, proj, env, current string) (string, error) {
 		fmt.Println("\n→ No service linked.")
 	}
 
-	if len(services) > 0 {
-		items := make([]promptItem, len(services))
-		for i, s := range services {
-			items[i] = promptItem{Slug: s.Slug, Name: s.Name}
-		}
-		slug, existing, err := promptSelectOrCreate("Select a service:", items, "Create new service")
-		if err != nil {
-			return "", err
-		}
-		if existing {
-			fmt.Printf("  ✓ Service: %s\n", slug)
-			return slug, nil
-		}
+	items := make([]promptItem, len(services))
+	for i, s := range services {
+		items[i] = promptItem{Slug: s.Slug, Name: s.Name}
+	}
+	slug, action, err := promptSelectCreateSkip("Select a service:", items, "Create new service", "Link to environment only")
+	if err != nil {
+		return "", err
+	}
+	switch action {
+	case "existing":
+		fmt.Printf("  ✓ Service: %s\n", slug)
+		return slug, nil
+	case "skip":
+		return "", nil
 	}
 
 	// Create new service
@@ -512,6 +559,16 @@ func createService(ws, proj, env, name string) (string, error) {
 		payload["github_repository"] = repo
 	}
 
+	// Ask for build strategy
+	strategyItems := []promptItem{
+		{Slug: "dockerfile", Name: "Dockerfile — build from your Dockerfile"},
+		{Slug: "buildpack", Name: "Buildpack — automatic detection, no Dockerfile required"},
+	}
+	strategy, err := promptSelect("  Build strategy:", strategyItems, "dockerfile")
+	if err == nil && strategy != "" {
+		payload["build_strategy"] = strategy
+	}
+
 	data, _ := json.Marshal(payload)
 	basePath := serviceBasePath(ws, proj, env)
 	req, _ := http.NewRequest("POST", apiURL(basePath), bytes.NewReader(data))
@@ -529,6 +586,26 @@ func createService(ws, proj, env, name string) (string, error) {
 	}
 	fmt.Printf("  ✓ Created service %q\n", svc.Name)
 	return svc.Slug, nil
+}
+
+// fetchServiceBuildStrategy fetches the build_strategy for a service.
+// Returns "dockerfile" (default), "buildpack", or "" on error.
+func fetchServiceBuildStrategy(ws, proj, env, svc string) string {
+	req, _ := http.NewRequest("GET", apiURL(servicePath(ws, proj, env, svc)), nil)
+	body, err := doRequest(req)
+	if err != nil {
+		return ""
+	}
+	var detail struct {
+		BuildStrategy *string `json:"build_strategy"`
+	}
+	if err := json.Unmarshal(body, &detail); err != nil {
+		return ""
+	}
+	if detail.BuildStrategy == nil || *detail.BuildStrategy == "" {
+		return "dockerfile"
+	}
+	return *detail.BuildStrategy
 }
 
 // --- Helpers ---

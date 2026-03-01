@@ -8,6 +8,8 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+
+	"github.com/SideQuest-Group/ancla-client/internal/config"
 )
 
 func init() {
@@ -29,19 +31,28 @@ releases, and scaling settings.
 Use sub-commands to list, inspect, or create environments.`,
 	Example: "  ancla envs list my-ws/my-proj\n  ancla envs get my-ws/my-proj/staging\n  ancla envs create my-ws/my-proj production",
 	GroupID: "resources",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return envsListCmd.RunE(cmd, args)
+	},
 }
 
 var envsListCmd = &cobra.Command{
-	Use:     "list <workspace>/<project>",
+	Use:     "list [workspace/project]",
 	Short:   "List environments in a project",
 	Example: "  ancla envs list my-ws/my-proj",
-	Args:    cobra.ExactArgs(1),
+	Args:    cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		parts := strings.SplitN(args[0], "/", 2)
-		if len(parts) != 2 {
-			return fmt.Errorf("argument must be in the form <workspace>/<project>")
+		var arg string
+		if len(args) == 1 {
+			arg = args[0]
 		}
-		ws, proj := parts[0], parts[1]
+		ws, proj, _, _, err := config.ResolveServicePath(arg, cfg)
+		if err != nil {
+			return err
+		}
+		if ws == "" || proj == "" {
+			return fmt.Errorf("workspace and project are required\n\n  ancla envs <workspace>/<project>\n\n  Hierarchy: workspace → project → env → service\n  Hint: run `ancla link` to set defaults")
+		}
 
 		req, _ := http.NewRequest("GET", apiURL("/workspaces/"+ws+"/projects/"+proj+"/envs/"), nil)
 		body, err := doRequest(req)

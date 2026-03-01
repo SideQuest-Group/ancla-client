@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -15,6 +16,7 @@ func init() {
 	buildsCmd.AddCommand(buildsTriggerCmd)
 	buildsCmd.AddCommand(buildsLogCmd)
 	buildsTriggerCmd.Flags().BoolP("follow", "f", false, "Follow build progress until complete")
+	buildsTriggerCmd.Flags().String("strategy", "", "Build strategy: dockerfile or buildpack")
 	buildsLogCmd.Flags().BoolP("follow", "f", false, "Poll for log updates until build completes")
 }
 
@@ -29,6 +31,9 @@ versioned artifact that can be deployed. Use sub-commands to list builds,
 trigger a new build, or view build logs.`,
 	Example: "  ancla builds list my-ws/my-proj/staging/my-svc\n  ancla builds trigger my-ws/my-proj/staging/my-svc",
 	GroupID: "resources",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return buildsListCmd.RunE(cmd, args)
+	},
 }
 
 var buildsListCmd = &cobra.Command{
@@ -53,11 +58,12 @@ var buildsListCmd = &cobra.Command{
 
 		var result struct {
 			Items []struct {
-				ID      string `json:"id"`
-				Version int    `json:"version"`
-				Built   bool   `json:"built"`
-				Error   bool   `json:"error"`
-				Created string `json:"created"`
+				ID       string  `json:"id"`
+				Version  int     `json:"version"`
+				Built    bool    `json:"built"`
+				Error    bool    `json:"error"`
+				Created  string  `json:"created"`
+				Strategy *string `json:"strategy"`
 			} `json:"items"`
 		}
 		if err := json.Unmarshal(body, &result); err != nil {
@@ -80,9 +86,13 @@ var buildsListCmd = &cobra.Command{
 			if len(id) > 8 {
 				id = id[:8]
 			}
-			rows = append(rows, []string{fmt.Sprintf("v%d", b.Version), id, colorStatus(status), b.Created})
+			strategy := "dockerfile"
+			if b.Strategy != nil && *b.Strategy != "" {
+				strategy = *b.Strategy
+			}
+			rows = append(rows, []string{fmt.Sprintf("v%d", b.Version), id, colorStatus(status), strategy, b.Created})
 		}
-		table([]string{"VERSION", "ID", "STATUS", "CREATED"}, rows)
+		table([]string{"VERSION", "ID", "STATUS", "STRATEGY", "CREATED"}, rows)
 		return nil
 	},
 }
@@ -102,7 +112,19 @@ var buildsTriggerCmd = &cobra.Command{
 		}
 
 		stop := spin("Triggering build...")
-		req, _ := http.NewRequest("POST", apiURL(servicePath(ws, proj, env, svc)+"/builds/trigger"), nil)
+		var reqBody *bytes.Reader
+		strategy, _ := cmd.Flags().GetString("strategy")
+		if strategy != "" {
+			payload, _ := json.Marshal(map[string]any{"strategy": strategy})
+			reqBody = bytes.NewReader(payload)
+		}
+		var req *http.Request
+		if reqBody != nil {
+			req, _ = http.NewRequest("POST", apiURL(servicePath(ws, proj, env, svc)+"/builds/trigger"), reqBody)
+			req.Header.Set("Content-Type", "application/json")
+		} else {
+			req, _ = http.NewRequest("POST", apiURL(servicePath(ws, proj, env, svc)+"/builds/trigger"), nil)
+		}
 		body, err := doRequest(req)
 		stop()
 		if err != nil {

@@ -7,6 +7,8 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+
+	"github.com/SideQuest-Group/ancla-client/internal/config"
 )
 
 func init() {
@@ -27,15 +29,29 @@ workspace-level permissions.
 Use sub-commands to list all projects or inspect a specific one.`,
 	Example: "  ancla projects list my-workspace\n  ancla projects get my-workspace/my-project",
 	GroupID: "resources",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return projectsListCmd.RunE(cmd, args)
+	},
 }
 
 var projectsListCmd = &cobra.Command{
-	Use:     "list <workspace>",
+	Use:     "list [workspace]",
 	Short:   "List projects in a workspace",
 	Example: "  ancla projects list my-workspace",
-	Args:    cobra.ExactArgs(1),
+	Args:    cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		ws := args[0]
+		var arg string
+		if len(args) == 1 {
+			arg = args[0]
+		}
+		ws, _, _, _, err := config.ResolveServicePath(arg, cfg)
+		if err != nil {
+			return err
+		}
+		if ws == "" {
+			return fmt.Errorf("workspace is required\n\n  ancla projects <workspace>\n\n  Hierarchy: workspace → project → env → service\n  Hint: run `ancla link` to set a default workspace")
+		}
+
 		req, _ := http.NewRequest("GET", apiURL("/workspaces/"+ws+"/projects/"), nil)
 		body, err := doRequest(req)
 		if err != nil {

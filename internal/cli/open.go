@@ -25,18 +25,20 @@ context and open the dashboard home instead.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		dashOnly, _ := cmd.Flags().GetBool("dashboard")
 
-		url := serverURL() + "/dashboard"
+		url := serverURL() + "/workspaces"
 
 		if !dashOnly {
 			if cfg.Workspace != "" {
-				url += "/workspaces/" + cfg.Workspace
+				url = serverURL() + "/workspaces/" + cfg.Workspace
 				if cfg.Project != "" {
-					url += "/projects/" + cfg.Project
-					if cfg.Env != "" {
-						url += "/envs/" + cfg.Env
-						if cfg.Service != "" {
-							url += "/services/" + cfg.Service
+					url += "/" + cfg.Project
+					if cfg.Service != "" {
+						url += "/services/" + cfg.Service
+						if cfg.Env != "" {
+							url += "?env=" + cfg.Env
 						}
+					} else if cfg.Env != "" {
+						url += "/envs/" + cfg.Env
 					}
 				}
 			}

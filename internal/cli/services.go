@@ -34,6 +34,9 @@ workspace/project/environment and has its own builds, deploys, and configuration
 Use sub-commands to list, inspect, deploy, and scale your services.`,
 	Example: "  ancla services list my-ws/my-proj/staging\n  ancla services get my-ws/my-proj/staging/my-svc\n  ancla services deploy my-ws/my-proj/staging/my-svc",
 	GroupID: "resources",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return servicesListCmd.RunE(cmd, args)
+	},
 }
 
 // resolveServicePath extracts ws/proj/env/svc from a slash-separated argument,

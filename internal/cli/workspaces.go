@@ -25,6 +25,9 @@ Use sub-commands to list your workspaces or inspect a specific one,
 including its members, projects, and service counts.`,
 	Example: "  ancla workspaces list\n  ancla workspaces get my-workspace",
 	GroupID: "resources",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return workspacesListCmd.RunE(cmd, args)
+	},
 }
 
 var workspacesListCmd = &cobra.Command{

@@ -1,136 +1,149 @@
 package cli
 
 import (
-	"bufio"
 	"fmt"
-	"os"
-	"strconv"
-	"strings"
-)
 
-// stdinReader is a shared buffered reader for interactive prompts.
-var stdinReader = bufio.NewReader(os.Stdin)
+	"github.com/charmbracelet/huh"
+)
 
 // promptItem represents a selectable item in an interactive list.
 type promptItem struct {
-	Label string // displayed as "[N] Label (Slug)"
+	Label string // unused legacy field
 	Slug  string // machine identifier returned on selection
 	Name  string // human-friendly name
 }
 
-// promptSelect shows a numbered list and returns the selected item's slug.
-// If defaultSlug is non-empty and found in items, it is highlighted and used
-// when the user presses Enter without input.
+const (
+	createNewSlug = "__create_new__"
+	skipSlug      = "__skip__"
+)
+
+// promptSelect shows an interactive arrow-key selector and returns the chosen slug.
 func promptSelect(label string, items []promptItem, defaultSlug string) (string, error) {
 	if len(items) == 0 {
 		return "", fmt.Errorf("no items to select")
 	}
 
-	fmt.Println()
-	fmt.Println(label)
-	defaultIdx := -1
-	for i, it := range items {
-		marker := " "
+	opts := make([]huh.Option[string], 0, len(items))
+	for _, it := range items {
 		display := it.Name
 		if display == "" {
 			display = it.Slug
 		}
+		opt := huh.NewOption(display, it.Slug)
 		if it.Slug == defaultSlug {
-			defaultIdx = i
-			marker = "*"
+			opt = opt.Selected(true)
 		}
-		fmt.Printf("  %s[%d] %s (%s)\n", marker, i+1, display, it.Slug)
+		opts = append(opts, opt)
 	}
 
-	prompt := "Enter number or slug"
-	if defaultIdx >= 0 {
-		prompt += fmt.Sprintf(" [%d]", defaultIdx+1)
+	var selected string
+	err := themed(
+		huh.NewSelect[string]().
+			Title(label).
+			Options(opts...).
+			Value(&selected),
+	).Run()
+	if err != nil {
+		return "", err
 	}
-	fmt.Print(prompt + ": ")
-
-	input, _ := stdinReader.ReadString('\n')
-	input = strings.TrimSpace(input)
-
-	// Empty input → use default
-	if input == "" && defaultIdx >= 0 {
-		return items[defaultIdx].Slug, nil
-	}
-
-	// Try as number
-	if n, err := strconv.Atoi(input); err == nil {
-		if n < 1 || n > len(items) {
-			return "", fmt.Errorf("invalid selection: %d (must be 1-%d)", n, len(items))
-		}
-		return items[n-1].Slug, nil
-	}
-
-	// Try as slug
-	for _, it := range items {
-		if it.Slug == input {
-			return it.Slug, nil
-		}
-	}
-	return "", fmt.Errorf("selection %q not found", input)
+	return selected, nil
 }
 
-// promptSelectOrCreate shows a numbered list with an extra "[N] Create new..."
-// option. Returns (slug, true) if user chose an existing item, or ("", false)
-// if user chose to create new.
+// promptSelectOrCreate shows an interactive selector with an extra "Create new…" option.
+// Returns (slug, true) for an existing item, or ("", false) for create-new.
 func promptSelectOrCreate(label string, items []promptItem, createLabel string) (string, bool, error) {
-	fmt.Println()
-	fmt.Println(label)
-	for i, it := range items {
+	opts := make([]huh.Option[string], 0, len(items)+1)
+	for _, it := range items {
 		display := it.Name
 		if display == "" {
 			display = it.Slug
 		}
-		fmt.Printf("  [%d] %s (%s)\n", i+1, display, it.Slug)
+		opts = append(opts, huh.NewOption(display, it.Slug))
 	}
-	createIdx := len(items) + 1
-	fmt.Printf("  [%d] %s\n", createIdx, createLabel)
-	fmt.Print("Enter number or slug: ")
+	opts = append(opts, huh.NewOption(createLabel, createNewSlug))
 
-	input, _ := stdinReader.ReadString('\n')
-	input = strings.TrimSpace(input)
-
-	if n, err := strconv.Atoi(input); err == nil {
-		if n == createIdx {
-			return "", false, nil
-		}
-		if n < 1 || n > len(items) {
-			return "", false, fmt.Errorf("invalid selection: %d (must be 1-%d)", n, createIdx)
-		}
-		return items[n-1].Slug, true, nil
+	var selected string
+	err := themed(
+		huh.NewSelect[string]().
+			Title(label).
+			Options(opts...).
+			Value(&selected),
+	).Run()
+	if err != nil {
+		return "", false, err
 	}
+	if selected == createNewSlug {
+		return "", false, nil
+	}
+	return selected, true, nil
+}
 
+// promptSelectCreateSkip shows a selector with existing items, a "Create new…" option,
+// and a "Skip" option. Returns the action taken: "existing" (slug set), "create", or "skip".
+func promptSelectCreateSkip(label string, items []promptItem, createLabel, skipLabel string) (slug, action string, err error) {
+	opts := make([]huh.Option[string], 0, len(items)+2)
 	for _, it := range items {
-		if it.Slug == input {
-			return it.Slug, true, nil
+		display := it.Name
+		if display == "" {
+			display = it.Slug
 		}
+		opts = append(opts, huh.NewOption(display, it.Slug))
 	}
-	return "", false, fmt.Errorf("selection %q not found", input)
+	opts = append(opts, huh.NewOption(createLabel, createNewSlug))
+	opts = append(opts, huh.NewOption(skipLabel, skipSlug))
+
+	var selected string
+	err = themed(
+		huh.NewSelect[string]().
+			Title(label).
+			Options(opts...).
+			Value(&selected),
+	).Run()
+	if err != nil {
+		return "", "", err
+	}
+	switch selected {
+	case createNewSlug:
+		return "", "create", nil
+	case skipSlug:
+		return "", "skip", nil
+	default:
+		return selected, "existing", nil
+	}
 }
 
 // promptInput asks for a text value with an optional default.
 func promptInput(label, defaultVal string) (string, error) {
+	var value string
+	input := huh.NewInput().
+		Title(label).
+		Value(&value)
 	if defaultVal != "" {
-		fmt.Printf("%s [%s]: ", label, defaultVal)
-	} else {
-		fmt.Printf("%s: ", label)
+		value = defaultVal
+		input = input.Placeholder(defaultVal)
 	}
-
-	input, _ := stdinReader.ReadString('\n')
-	input = strings.TrimSpace(input)
-	if input == "" {
+	if err := themed(input).Run(); err != nil {
+		return "", err
+	}
+	if value == "" {
 		return defaultVal, nil
 	}
-	return input, nil
+	return value, nil
 }
 
-// promptConfirm asks a yes/no question, defaulting to yes (Y/n).
+// promptConfirm asks a yes/no question, defaulting to yes.
 func promptConfirm(message string) bool {
-	fmt.Printf("%s [Y/n]: ", message)
-	input, _ := stdinReader.ReadString('\n')
-	input = strings.TrimSpace(strings.ToLower(input))
-	return input == "" || input == "y" || input == "yes"
+	confirmed := true
+	err := themed(
+		huh.NewConfirm().
+			Title(message).
+			Affirmative("Yes").
+			Negative("No").
+			Value(&confirmed),
+	).Run()
+	if err != nil {
+		return false
+	}
+	return confirmed
 }
